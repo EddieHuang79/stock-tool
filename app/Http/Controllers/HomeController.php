@@ -14,6 +14,6 @@ class HomeController extends Controller
      */
     public function index()
     {
-        dd(1);
+        require("dist/index.html");
     }
 }
