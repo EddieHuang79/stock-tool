@@ -41,12 +41,35 @@ Route::get('/service', ['as'=>'service','uses'=>'ServiceController@index'])->mid
 // 		股票	CRUD
 
 Route::resource('/stock', 'StockController');
-// Route::resource('/stock', 'StockController')->middleware('token.verify');
+
+// 		觸發抓取股價資料
+
+Route::get('/get_data', 'StockController@get_data');
+
+// 		股票的選項
+
+Route::get('/get_stock_list', 'StockController@get_stock_option');
 
 
 //		data 		
 
-Route::get('/get_data', 'SellBuyPercentController@get_data');
 Route::get('/count_data', 'SellBuyPercentController@count_data');
 Route::get('/get_buy_sell_report', 'SellBuyPercentController@get_buy_sell_report');
-Route::get('/get_stock_list', 'SellBuyPercentController@get_stock_list');
+
+
+// 		test route
+
+Route::get('/test', 'StockController@test_entrance');
+Route::get('/api_test', 'MasterLinkAPIController@api_test');
+
+// 		Line
+
+Route::get('/webhook', 'FBController@index');
+Route::post('/webhook', 'FBController@index');
+
+// 		FB
+
+Route::get('/fb_callback', 'FBController@callback');
+Route::post('/fb_message', 'FBController@send_message');
+
+
