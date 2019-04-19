@@ -23,6 +23,8 @@ class LineController extends Controller
 
 		$data = $request->getContent();
 
+		Line_logic::receive_message( $data );
+
 		Record_logic::write_operate_log( $action = "Line", $content = $data );
 
 		return response( "done" , 200 )->header('Content-Type', 'text/plain');   

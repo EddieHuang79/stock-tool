@@ -5,7 +5,7 @@ namespace App\logic;
 use Ixudra\Curl\Facades\Curl;
 use App\model\Line;
 
-class Line_logic extends BaseTool
+class Line_logic
 {
 
 
@@ -40,8 +40,6 @@ class Line_logic extends BaseTool
 
 		$_this = new self();
 
-		$data = '{"events":[{"type":"message","replyToken":"e7e6837063234d93ad0add936d330fe6","source":{"userId":"U1f4fa85618159c967669af63259916ba","type":"user"},"timestamp":1555662669423,"message":{"type":"text","id":"9719715626603","text":"1"}}],"destination":"U1774cef2161f5987f43a81ca15ea7bce"}';
-
 		$data = json_decode($data, true);
 
 		$message = $data["events"][0]["message"]["text"];
@@ -49,6 +47,8 @@ class Line_logic extends BaseTool
 		$userId = $data["events"][0]["source"]["userId"];
 
 		$is_exist = $_this->is_exist( $userId );
+
+		Record_logic::write_operate_log( $action = "is_exist", $content = $is_exist );
 
 		if ( $is_exist === false ) 
 		{

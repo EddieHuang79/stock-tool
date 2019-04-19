@@ -26,7 +26,7 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule)
     {
 
-        if ( env("APP_DEBUG") === false ) 
+        if ( env("APP_DEBUG") === false && env("APP_ENV") === 'local' ) 
         {
 
             // 自動取得資料
@@ -125,7 +125,7 @@ class Kernel extends ConsoleKernel
             $schedule->call(function () {
 
                 Crontab_logic::update_daily_data();
-                
+
                 Crontab_logic::auto_save_this_month_file_to_db();
 
             })
