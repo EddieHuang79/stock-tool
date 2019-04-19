@@ -33,4 +33,4 @@
 
 <h3>資料來源</h3>
 
-<a href="https://reurl.cc/qvy2D">數據分析公式來源</a>
+<a href="https://reurl.cc/qvy2D" target="_blank">數據分析公式來源</a>

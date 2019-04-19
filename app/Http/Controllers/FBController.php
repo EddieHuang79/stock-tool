@@ -40,11 +40,23 @@ class FBController extends Controller
 
 		$reply_data = [
 			"message"		=>	$request->message,
-			"PSID"			=>	'2215901331787784',
+			"PSID"			=>	'2363717870345037',
 			"msg_type"		=>	'text'
 		];
 
 		FB_logic::send_message( $reply_data );
+
+		return response( "got it!" , 200 )->header('Content-Type', 'text/plain');
+
+	}
+
+
+	// 接收訊息
+
+	public function set_message(Request $request)
+	{
+
+		Record_logic::write_operate_log('set_message', $request);
 
 		return response( "got it!" , 200 )->header('Content-Type', 'text/plain');
 

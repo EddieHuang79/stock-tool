@@ -42,11 +42,12 @@ Route::get('/service', ['as'=>'service','uses'=>'ServiceController@index'])->mid
 
 Route::resource('/stock', 'StockController');
 
-// 		觸發抓取股價資料
+
+//		觸發抓取股價資料
 
 Route::get('/get_data', 'StockController@get_data');
 
-// 		股票的選項
+//		股票的選項
 
 Route::get('/get_stock_list', 'StockController@get_stock_option');
 
@@ -64,8 +65,8 @@ Route::get('/api_test', 'MasterLinkAPIController@api_test');
 
 // 		Line
 
-Route::get('/webhook', 'FBController@index');
-Route::post('/webhook', 'FBController@index');
+Route::get('/webhook', 'LineController@index');
+Route::post('/webhook', 'LineController@indexPost');
 
 // 		FB
 

@@ -865,6 +865,27 @@ trait SchemaFunc
 	}
 
 
+	// 		民國日期轉西元日期
+
+	protected function date_transformat( $date )
+	{
+
+		$result = '';
+
+		if ( !empty($date) && is_string($date) ) 
+		{
+	
+			$tmp = explode("/", $date);
+	
+			$tmp[0] = 1911 + (int)$tmp[0];
+	
+			$result = implode("-", $tmp);
+
+		}
+
+		return $result;
+
+	}
 
 }
 

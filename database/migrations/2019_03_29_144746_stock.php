@@ -7,11 +7,12 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
-class SellBuyPercent extends Migration
+class Stock extends Migration
 {
 
+    protected $stock_info_table = 'stock_info';
+
     protected $stock_data_table = 'stock_data';
-    protected $sell_buy_percent_table = 'sell_buy_percent';
 
     /**
      * Run the migrations.
@@ -21,7 +22,7 @@ class SellBuyPercent extends Migration
     public function up()
     {
 
-        Schema::create($this->stock_data_table, function (Blueprint $table) {
+        Schema::create($this->stock_info_table, function (Blueprint $table) {
             $table->increments('id');
             $table->integer('code');
             $table->integer('type');
@@ -29,33 +30,22 @@ class SellBuyPercent extends Migration
             $table->timestamps();
         });
 
-        Schema::create($this->sell_buy_percent_table, function (Blueprint $table) {
+        Schema::create($this->stock_data_table, function (Blueprint $table) {
             $table->increments('id');
-            $table->integer('stock_data_id')->unsigned();
+            $table->integer('stock_id')->unsigned();
             $table->date('data_date');
-            $table->string('weak_market')->default('0');
-            $table->string('begin')->default('0');
-            $table->string('highest')->default('0');
-            $table->string('lowest')->default('0');
-            $table->string('finish')->default('0');
-            $table->string('spread')->default('0');
-            $table->string('buy1')->default('0');
-            $table->string('sell1')->default('0');
-            $table->string('buy2')->default('0');
-            $table->string('sell2')->default('0');
-            $table->string('rally_total')->default('0');
-            $table->string('tumbled_total')->default('0');
-            $table->string('rally_num1')->default('0');
-            $table->string('tumbled_num1')->default('0');
-            $table->string('rally_total_20days')->default('0');
-            $table->string('tumbled_total_20days')->default('0');
-            $table->string('result')->default('0');
+            $table->string('volume');
+            $table->string('open');
+            $table->string('highest');
+            $table->string('lowest');
+            $table->string('close');
             $table->timestamps();
         });
 
-        Schema::table($this->sell_buy_percent_table, function($table) {
-           $table->foreign('stock_data_id')->references('id')->on($this->stock_data_table);
+        Schema::table($this->stock_data_table, function($table) {
+           $table->foreign('stock_id')->references('id')->on($this->stock_info_table);
         });
+
 
         $file = Storage::get('stock/股票列表 - 上市.csv');
 
@@ -68,7 +58,7 @@ class SellBuyPercent extends Migration
 
             $tmp = explode(",", $row);
 
-            DB::table($this->stock_data_table)->insert(
+            DB::table($this->stock_info_table)->insert(
                 [
                     "code"          => (int)$tmp[0],
                     "name"          => $tmp[1],
@@ -89,7 +79,7 @@ class SellBuyPercent extends Migration
 
             $tmp = explode(",", $row);
 
-            DB::table($this->stock_data_table)->insert(
+            DB::table($this->stock_info_table)->insert(
                 [
                     "code"          => (int)$tmp[0],
                     "name"          => $tmp[1],
@@ -111,8 +101,8 @@ class SellBuyPercent extends Migration
     public function down()
     {
 
-        Schema::dropIfExists( $this->sell_buy_percent_table );
         Schema::dropIfExists( $this->stock_data_table );
+        Schema::dropIfExists( $this->stock_info_table );
 
     }
 }
