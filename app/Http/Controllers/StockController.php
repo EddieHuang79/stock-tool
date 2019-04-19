@@ -157,7 +157,7 @@ class StockController extends Controller
         // Stock_logic::get_all_stock_update_date();
         // Line_logic::receive_message( $data = '' );
         // SellBuyPercent_logic::count_data_logic( $code = 2633 );
-        Crontab_logic::auto_save_this_month_file_to_db();
+        // Crontab_logic::auto_save_this_month_file_to_db();
 
 
         return response( "done" , 200 )->header('Content-Type', 'text/plain');      

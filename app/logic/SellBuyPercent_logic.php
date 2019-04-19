@@ -203,7 +203,7 @@ class SellBuyPercent_logic extends Basetool
 
 		$result = false;
 
-		if ( !empty($code) && is_string($code) ) 
+		if ( !empty($code) ) 
 		{
 
 			$insert_data = [];
@@ -265,7 +265,7 @@ class SellBuyPercent_logic extends Basetool
 
 		$result = false;
 
-		if ( !empty($code) && is_string($code) ) 
+		if ( !empty($code) ) 
 		{
 
 			$insert_data = [];
@@ -327,7 +327,7 @@ class SellBuyPercent_logic extends Basetool
 
 		$result = false;
 
-		if ( !empty($code) && is_string($code) ) 
+		if ( !empty($code) ) 
 		{
 
 			$insert_data = [];
@@ -389,7 +389,7 @@ class SellBuyPercent_logic extends Basetool
 
 		$result = false;
 
-		if ( !empty($code) && is_string($code) ) 
+		if ( !empty($code) ) 
 		{
 
 			$insert_data = [];
@@ -451,7 +451,7 @@ class SellBuyPercent_logic extends Basetool
 
 		$result = false;
 
-		if ( !empty($code) && is_string($code) ) 
+		if ( !empty($code) ) 
 		{
 
 			$insert_data = [];
@@ -513,7 +513,7 @@ class SellBuyPercent_logic extends Basetool
 
 		$result = false;
 
-		if ( !empty($code) && is_string($code) ) 
+		if ( !empty($code) ) 
 		{
 
 			$insert_data = [];
@@ -578,7 +578,7 @@ class SellBuyPercent_logic extends Basetool
 
 		$result = false;
 
-		if ( !empty($code) && is_string($code) ) 
+		if ( !empty($code) ) 
 		{
 
 			$insert_data = [];
@@ -710,6 +710,11 @@ class SellBuyPercent_logic extends Basetool
 
 		if ( !empty($code) && is_int($code) ) 
 		{
+
+			// 		暫時先這樣搞
+
+			Crontab_logic::auto_save_file_to_db();
+			Crontab_logic::auto_save_this_month_file_to_db();
 
 			// 		將檔案數據轉存資料庫
 
