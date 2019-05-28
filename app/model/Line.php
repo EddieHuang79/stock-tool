@@ -7,28 +7,31 @@ use Illuminate\Support\Facades\DB;
 class Line
 {
 
-	protected $table = 'line';
+    private $table = 'line';
 
-	public static function add_data( $data )
+	public function add_data( $data )
 	{
 
-		$_this = new self;
-
-		$user_id = DB::table($_this->table)->insertGetId($data);
+		$user_id = DB::table($this->table)->insertGetId($data);
 
 		return $user_id;
 
 	}
 
-	public static function get_data()
+	public function get_data()
 	{
 
-		$_this = new self;
-
-		$user_id = DB::table($_this->table)->get();
+		$user_id = DB::table($this->table)->get();
 
 		return $user_id;
 
 	}
+
+    public static function getInstance()
+    {
+
+        return new self;
+
+    }
 
 }

@@ -10,12 +10,12 @@ use App\Traits\Mathlib;
 	@	https://www.ezchart.com.tw/inds.php?IND=KD
 	@	https://www.moneydj.com/KMDJ/wiki/wikiViewer.aspx?keyid=02e9d1fa-499f-4952-9f5b-e7cad942c97b
 
-	#	說明	
+	#	說明
 
 	KD市場常使用的一套技術分析工具。其適用範圍以中短期投資的技術分析為最佳。
 	隨機 指標的理論認為：當股市處於牛市(多頭)時，收盤價往往接近當日最高價； 反之在熊市(空頭)時，收盤價比較接近當日最低價，該指數的目的即在反映 出近期收盤價在該段日子中價格區間的相對位置。
 
-	#	計算公式	
+	#	計算公式
 
 	它是由%K(快速平均值)、%D(慢速平均值)兩條線所組成，假設從n天週期計算出隨機指標時，首先須找出最近n天當中曾經出現過的最高價、最低價與第n天的收盤價，然後利用這三個數字來計算第n天的未成熟隨機值(RSV)
 
@@ -28,7 +28,7 @@ use App\Traits\Mathlib;
 	當日D值(%D)= 2/3 前一日 D值＋ 1/3 當日K值
 	若無前一日的K值與D值，可以分別用50來代入計算，經過長期的平滑的結果，起算基期雖然不同，但會趨於一致，差異很小。
 
-	#	使用方法	
+	#	使用方法
 
 	1.	如果行情是一個明顯的漲勢，會帶動K線與D線向上升。如漲勢開始遲緩，則會反應到K值與D值，使得K值跌破D值，此時中短期跌勢確立。
 	2.	當K值大於D值，顯示目前是向上漲升的趨勢，因此在圖形上K線向上突破D線時，即為買進訊號。
@@ -43,94 +43,248 @@ use App\Traits\Mathlib;
 */
 
 
-class KD_logic extends Basetool
+class KD_logic
 {
 
 	use SchemaFunc, Mathlib;
 
 	protected $n = 9;
 
-	public static function count_data( $code )
-	{
+    private $data = [];
 
-		$_this = new self();
+    private $id_date_mapping = [];
+
+    private $Tech = [];
+
+    private $step_map = [];
+
+    public function count_data( $stock_id, $id_date_mapping, $Tech, $Tech_data )
+	{
 
 		$result = false;
 
-		$default_KD = 50;
-
-		$K_value = [];
-
-		$D_value = [];
-
-		if ( !empty($code) ) 
+		if ( !empty($stock_id) )
 		{
 
-			$rsv_data = RSV_logic::get_rsv_data( $code );
+            $this->id_date_mapping = $id_date_mapping;
 
-			$stock_data_id = $_this->pluck( $rsv_data, "stock_data_id" );
+            $this->Tech = $Tech;
 
-			$exist_array = [
-				"K" => $_this->pluck( TechnicalAnalysis_logic::get_data( 2, $stock_data_id ), "stock_data_id" ),
-				"D" => $_this->pluck( TechnicalAnalysis_logic::get_data( 3, $stock_data_id ), "stock_data_id" )
-			];
+            $this->step_map = $Tech_data->mapWithKeys(function ($item){
+               return [$item->data_date => $item->step];
+            })->toArray();
 
-			foreach ($rsv_data as $key => $rsv) 
-			{
+            $this->data = Stock_logic::getInstance()->get_stock_data( $stock_id );
 
-				$last_K_value = isset($K_value[$key - 1]["value"]) ? $K_value[$key - 1]["value"] : $default_KD ;
-			
-				$last_D_value = isset($D_value[$key - 1]["value"]) ? $D_value[$key - 1]["value"] : $default_KD ;
+            //  找出N天內最高價
 
-				// 當日K值(%K)= 2/3 前一日 K值 + 1/3 RSV
+            $this->get_highest_close_value();
 
-				$K_value[$key] = [
-					"data_date" => $rsv["data_date"],
-					"value" 	=> $_this->except( $last_K_value * 2, 3 ) + $_this->except( $rsv["value"], 3 )
-				] ; 
+            //  找出N天內最低價
 
-				// 當日D值(%D)= 2/3 前一日 D值＋ 1/3 當日K值
+            $this->get_lowest_close_value();
 
-				$D_value[$key] = [
-					"data_date" => $rsv["data_date"],
-					"value"		=> $_this->except( $last_D_value * 2, 3 ) + $_this->except( $K_value[$key]["value"], 3 )
-				];
+            //  計算RSV
 
-				// 寫入資料庫
+            $this->get_RSV_value();
 
-				if ( !in_array($rsv["stock_data_id"], $exist_array["K"]) ) 
-				{
-					
-					$option = [
-						"stock_data_id" => $rsv["stock_data_id"],
-						"value" 		=> round($K_value[$key]["value"], 2)
-					];
+            //  取得K值
 
-					$insert_data = TechnicalAnalysis_logic::insert_format( $option, 2 );
+            $this->get_K_Value();
 
-					TechnicalAnalysis_logic::add_data( $insert_data );
-					
-				}
+            //  取得D值
 
-				if ( !in_array($rsv["stock_data_id"], $exist_array["D"]) ) 
-				{
+            $this->get_D_Value();
 
-					$option = [
-						"stock_data_id" => $rsv["stock_data_id"],
-						"value" 		=> round($D_value[$key]["value"], 2)
-					];
+            //  格式化
 
-					$insert_data = TechnicalAnalysis_logic::insert_format( $option, 3 );
+            $this->format();
 
-					TechnicalAnalysis_logic::add_data( $insert_data );
+            //  更新
 
-				}
-
-			}
+            $this->update();
 
 		}
 
 		return $result;
+
+	}
+
+
+    // 	找出N天內最高價
+
+    private function get_highest_close_value()
+    {
+
+        $this->data->map(function ($item, $key) {
+            if ( $key >= $this->n - 1 )
+            {
+                $sub_data = array_slice( $this->data->values()->toArray(), $key - ($this->n - 1), $this->n );
+                $highest = collect( $sub_data )->pluck( "highest" )->max();
+                $item->highestClose = $highest;
+            }
+            else
+            {
+                $item->highestClose = 0.0;
+            }
+            return $item;
+        });
+
+        return true;
+
+    }
+
+
+    // 	找出N天內最低價
+
+    private function get_lowest_close_value()
+    {
+
+        $this->data->map(function ($item, $key) {
+            if ( $key >= $this->n - 1 )
+            {
+                $sub_data = array_slice( $this->data->values()->toArray(), $key - ($this->n - 1), $this->n );
+                $lowest = collect( $sub_data )->pluck( "lowest" )->min();
+                $item->lowestClose = $lowest;
+            }
+            else
+            {
+                $item->lowestClose = 0.0;
+            }
+            return $item;
+        });
+
+
+        return true;
+
+    }
+
+
+    // 	計算RSV
+
+    private function get_RSV_value()
+    {
+
+        $this->data->map(function ($item, $key) {
+            if ( $key >= $this->n - 1 )
+            {
+                $item->RSV = $this->except( $item->close - $item->lowestClose, $item->highestClose - $item->lowestClose ) * 100;
+                $item->RSV = round($item->RSV, 2);
+            }
+            else
+            {
+                $item->RSV = 0.0;
+            }
+            return $item;
+        });
+
+
+        return true;
+
+    }
+
+
+    //  取得K值
+
+    private function get_K_Value()
+    {
+
+        $this->data->map(function ($item, $key) {
+            if ( $key >= $this->n - 1 )
+            {
+                $last_K_value = $key !== $this->n - 1 ? $this->data[$key - 1]->K9 : 50 ;
+                $item->K9 = $this->except( $last_K_value * 2, 3 ) + $this->except( $item->RSV, 3 );
+                $item->K9 = round( $item->K9, 2 );
+            }
+            else
+            {
+                $item->K9 = 0.0;
+            }
+            return $item;
+        });
+
+        return true;
+
+    }
+
+    //  取得D值
+
+    private function get_D_Value()
+    {
+
+        $this->data->map(function ($item, $key) {
+            if ( $key >= $this->n - 1 )
+            {
+                $last_D_value = $key !== $this->n - 1 ? $this->data[$key - 1]->D9 : 50 ;
+                $item->D9 = $this->except( $last_D_value * 2, 3 ) + $this->except( $item->K9, 3 );
+                $item->D9 = round($item->D9, 2);
+            }
+            else
+            {
+                $item->D9 = 0.0;
+            }
+            return $item;
+        });
+
+        return true;
+
+    }
+
+    //  格式化
+
+    private function format()
+    {
+
+        $this->data = $this->data->map(function ( $item ) {
+            $result = [
+                "RSV"           =>  $item->RSV,
+                "K9"            =>  $item->K9,
+                "D9"            =>  $item->D9,
+                "step"          =>  1,
+                "updated_at"    =>  date("Y-m-d H:i:s")
+            ];
+            return [ "date" => $item->data_date, "data" => $result ];
+        });
+
+        $this->data = $this->data->filter(function ($item) {
+            return $this->step_map[$item["date"]] === 0;
+        }) ;
+
+        return true;
+
+    }
+
+    //  更新
+
+    private function update()
+    {
+
+        $data = $this->data->toArray();
+
+        $id_date_mapping = $this->id_date_mapping;
+
+        $Tech = $this->Tech;
+
+        foreach ($data as $row)
+        {
+
+            if ( isset($id_date_mapping[$row["date"]]) )
+            {
+
+                $Tech->update_data( $row["data"], $id_date_mapping[$row["date"]] );
+
+            }
+
+        }
+
+        return true;
+
+    }
+
+    public static function getInstance()
+	{
+
+        return new self;
 
 	}
 

@@ -10,12 +10,12 @@ use App\Traits\Mathlib;
 	@	https://www.ezchart.com.tw/inds.php?IND=RSI
 	@	https://www.moneydj.com/KMDJ/Wiki/wikiViewer.aspx?keyid=1342fb37-760e-48b0-9f27-65674f6344c9
 
-	#	說明	
-		
+	#	說明
+
 		RSI 目前已為市場普遍使用，是主要技術指標之一，其主要特點是計算某一段時間內買賣雙方力量，
 		作為超買、超賣的參考與Ｋ線圖及其他技術指標（三至五種）一起使用，以免過早賣及買進，造成少賺多賠的損失。
 
-	#	計算公式	
+	#	計算公式
 
 		      過去n日內上漲點數總和
 		UP＝────────────────────────
@@ -29,8 +29,13 @@ use App\Traits\Mathlib;
 		       　　　　　  100
 		n日RSI＝100 －　────────
 		                 1+RS
-             
-	#	使用方法	
+    #   威爾德
+
+    UP t = UP t-1 + 1 / N ( Ut – UP t-1)
+
+    其中 N 為平滑平均天數， t 為當日值， t-1為前一日值
+
+	#	使用方法
 
 	1.	以6日RSI值為例，80以上為超買，90以上或M頭為賣點；20以下為超賣，10以下或W底為買點。
 	2.	在股價創新高點，同時RSI也創新高點時，表示後市仍強，若未創新高點為賣出訊號。
@@ -51,130 +56,84 @@ use App\Traits\Mathlib;
 */
 
 
-class RSI_logic extends Basetool
+class RSI_logic
 {
 
 	use SchemaFunc, Mathlib;
 
-	// 		計算資料
+    private $n1 = 5;
 
-	public static function count_data( $code )
+    private $n2 = 10;
+
+    private $data = [];
+
+    private $id_date_mapping = [];
+
+    private $Tech = [];
+
+    private $step_map = [];
+
+    // 		計算資料
+
+	public function count_data( $stock_id, $id_date_mapping, $Tech, $Tech_data )
 	{
-
-		$_this = new self();
 
 		$result = false;
 
-		if ( !empty($code) ) 
+		if ( !empty($stock_id) )
 		{
 
-			$stock_data = Stock_logic::get_stock( $code );
+            $this->id_date_mapping = $id_date_mapping;
 
-			$data = Stock_logic::get_stock_data( $stock_data->id )->map( function( $item, $key ) {
-				$item->volume = intval($item->volume);
-				$item->open = floatval($item->open);
-				$item->close = floatval($item->close);
-				$item->highest = floatval($item->highest);
-				$item->lowest = floatval($item->lowest);
-				return $item;
-			} )->toArray();
+            $this->Tech = $Tech;
 
-			$stock_data_id = $_this->pluck( $data, "id" );
+            $this->step_map = $Tech_data->mapWithKeys(function ($item){
+                return [$item->data_date => $item->step];
+            })->toArray();
 
-			$exist_array = [
-				"RSI5" 	=> $_this->pluck( TechnicalAnalysis_logic::get_data( 4, $stock_data_id ), "stock_data_id" ),
-				"RSI10" => $_this->pluck( TechnicalAnalysis_logic::get_data( 5, $stock_data_id ), "stock_data_id" )
-			];
+		    //  取得5檔
 
-			$n1 = 5;
+			$this->data = Stock_logic::getInstance()->get_stock_data( $stock_id );
 
-			$n2 = 10;
+            // 上漲點數(與前日比)
 
-			$RSI = [
-				"5" 	=> [],
-				"10" 	=> []
-			];
+            $this->get_rise_num_value();
 
-			$rise_num = [];
+            // 下跌點數(與前日比)
 
-			$fall_num = [];
+            $this->get_fall_num_value();
 
-			$UP = [
-				"5" 	=> [],
-				"10" 	=> []
-			];
+            // 5日內上漲總和平滑平均值 威爾德平滑法
 
-			$DN = [
-				"5" 	=> [],
-				"10" 	=> []		
-			];
+            $this->getWildersValue_5days_rise();
 
-			$tmp = [];
+            // 5日內下跌總和平滑平均值 威爾德平滑法
 
-			foreach ($data as $key => $row) 
-			{
+            $this->getWildersValue_5days_fall();
 
-				// 上漲點數(與前日比)
+            // 計算RSI5
 
-				$rise_num[$key] = $_this->get_rise_num_value( $data, $key );
+            $this->getRSI5();
 
-				// 下跌點數(與前日比)
+            // 10日內上漲總和平滑平均值 威爾德平滑法
 
-				$fall_num[$key] = $_this->get_fall_num_value( $data, $key, $n1 );
+            $this->getWildersValue_10days_rise();
 
-				if ( $key >= $n1 - 1 && !in_array($row->id, $exist_array["RSI5"]) ) 
-				{
+            // 10日內下跌總和平滑平均值 威爾德平滑法
 
-					// 5日內上漲總和平滑平均值 威爾德平滑法
+            $this->getWildersValue_10days_fall();
 
-					$UP[$n1][$key] = $_this->get_Wilders_value( $UP[$n1], $rise_num, $key, $n1 );
+            // 計算RSI10
 
-					// 5日內下跌總和平滑平均值 威爾德平滑法
+            $this->getRSI10();
 
-					$DN[$n1][$key] = $_this->get_Wilders_value( $DN[$n1], $fall_num, $key, $n1 );
+            //  格式化
 
-					// RSI = UP / ( DN + UP ) * 100
+            $this->format();
 
-					$RSI = $_this->except( $UP[$n1][$key], $UP[$n1][$key] + $DN[$n1][$key] ) * 100 ;
+            //  更新
 
-					$option = [
-						"stock_data_id" => $row->id,
-						"value" 		=> round($RSI, 2)
-					];
-
-					$insert_data = TechnicalAnalysis_logic::insert_format( $option, 4 );
-
-					TechnicalAnalysis_logic::add_data( $insert_data );
-
-				}
-			
-				if ( $key >= $n2 - 1 && !in_array($row->id, $exist_array["RSI10"]) ) 
-				{
-
-					// 5日內上漲總和平滑平均值 威爾德平滑法
-
-					$UP[$n2][$key] = $_this->get_Wilders_value( $UP[$n2], $rise_num, $key, $n2 );
-
-					// 5日內下跌總和平滑平均值 威爾德平滑法
-
-					$DN[$n2][$key] = $_this->get_Wilders_value( $DN[$n2], $fall_num, $key, $n2 );
-
-					// RSI = UP / ( DN + UP ) * 100
-
-					$RSI = $_this->except( $UP[$n2][$key], $UP[$n2][$key] + $DN[$n2][$key] ) * 100 ;
-
-					$option = [
-						"stock_data_id" => $row->id,
-						"value" 		=> round($RSI, 2)
-					];
-
-					$insert_data = TechnicalAnalysis_logic::insert_format( $option, 5 );
-
-					TechnicalAnalysis_logic::add_data( $insert_data );
-
-				}
-
-			}
+            $this->update();
 
 		}
 
@@ -185,70 +144,265 @@ class RSI_logic extends Basetool
 
 	// 	找出上漲點數，與前日相比
 
-	protected function get_rise_num_value( $data, $key )
+	private function get_rise_num_value()
 	{
 
-		$_this = new self();
+        $this->data = $this->data->map(function ($item, $key) {
+            if ( $key >= 1 )
+            {
+                $item->rise_num = $item->close - $this->data[$key - 1]->close > 0 ? $item->close - $this->data[$key - 1]->close : 0;
+            }
+            else
+            {
+                $item->rise_num = 0;
+            }
+            return $item;
+        });
 
-		$result = 0;
-
-		if ( !empty($data) && is_array($data) && is_int($key) && isset($data[$key - 1]) ) 
-		{
-
-			$result = $data[$key]->close - $data[$key - 1]->close > 0 ? $data[$key]->close - $data[$key - 1]->close : 0 ;
-
-		}
-
-		return $result;
+        return true;
 
 	}
 
 
 	// 	找出下跌點數，與前日相比
 
-	protected function get_fall_num_value( $data, $key )
+    private function get_fall_num_value()
 	{
 
-		$_this = new self();
+        $this->data = $this->data->map(function ($item, $key) {
+            if ( $key >= 1 )
+            {
+                $item->fall_num = $item->close - $this->data[$key - 1]->close < 0 ? abs( $item->close - $this->data[$key - 1]->close ) : 0;
+            }
+            else
+            {
+                $item->fall_num = 0;
+            }
+            return $item;
+        });
 
-		$result = 0;
-
-		if ( !empty($data) && is_array($data) && is_int($key) && isset($data[$key - 1]) ) 
-		{
-
-			$result = $data[$key]->close - $data[$key - 1]->close < 0 ? abs($data[$key]->close - $data[$key - 1]->close) : 0 ;
-
-		}
-
-		return $result;
+		return true;
 
 	}
 
 
 	// 	威爾德平滑法
 
-	protected function get_Wilders_value( $main, $sub, $key, $n )
+    /*
+        UP t = UP t-1 + 1 / N ( Ut – UP t-1)
+     */
+    private function getWildersValue_5days_rise()
 	{
 
-		$_this = new self();
+        $n = $this->n1;
 
-		$result = 0;
+        $this->data = $this->data->map(function ($item, $key) use ( $n ) {
+            if ( $key >= $n - 1 )
+            {
+                $sub_data = array_slice( $this->data->pluck("rise_num")->values()->toArray(), $key - ($n - 1), $n );
+                $item->UP_5days = $key !== $n - 1 ?
+                    $this->data[$key - 1]->UP_5days + $this->except( ( $this->data[$key]->rise_num - $this->data[$key - 1]->UP_5days ), $n ) :
+                    $this->except( array_sum( $sub_data ), $n ) ;
+            }
+            else
+            {
+                $item->UP_5days = 0.0;
+            }
+            return $item;
+        });
 
-		if ( is_array($main) && !empty($sub) && is_array($sub) && is_int($key) && !empty($n) && is_int($n) ) 
-		{
-
-			$start = $key - ($n - 1);
-
-			$sub_data = array_slice( $sub, $start, $n );
-
-			$result = isset($main[$key - 1]) ? $main[$key - 1] + $_this->except( ( $sub[$key] - $main[$key - 1] ), $n ) : $_this->except( array_sum( $sub_data ), $n ) ;
-
-		}
-
-		return $result;
+		return true;
 
 	}
 
+    private function getWildersValue_5days_fall()
+    {
+
+        $n = $this->n1;
+
+        $this->data = $this->data->map(function ($item, $key) use ( $n ) {
+            if ( $key >= $n - 1 )
+            {
+                $sub_data = array_slice( $this->data->pluck("fall_num")->values()->toArray(), $key - ($n - 1), $n );
+                $item->DN_5days = $key !== $n - 1 ?
+                    $this->data[$key - 1]->DN_5days + $this->except( ( $this->data[$key]->fall_num - $this->data[$key - 1]->DN_5days ), $n ) :
+                    $this->except( array_sum( $sub_data ), $n ) ;
+            }
+            else
+            {
+                $item->DN_5days = 0.0;
+            }
+            return $item;
+        });
+
+        return true;
+
+    }
+
+    // 	取得RSI5
+
+    private function getRSI5()
+    {
+
+        $n = $this->n1;
+
+        $this->data = $this->data->map(function ($item, $key) use ( $n ) {
+            if ( $key >= $n - 1 )
+            {
+
+                $item->RSI5 = $this->except( $item->UP_5days, $item->UP_5days + $item->DN_5days ) * 100;
+
+                $item->RSI5 = round($item->RSI5, 2);
+
+            }
+            else
+            {
+                $item->RSI5 = 0.0;
+            }
+            return $item;
+        });
+
+        return true;
+
+    }
+
+    /*
+      UP t = UP t-1 + 1 / N ( Ut – UP t-1)
+   */
+    private function getWildersValue_10days_rise()
+    {
+
+        $n = $this->n2;
+
+        $this->data = $this->data->map(function ($item, $key) use ( $n ) {
+            if ( $key >= $n - 1 )
+            {
+                $sub_data = array_slice( $this->data->pluck("rise_num")->values()->toArray(), $key - ($n - 1), $n );
+                $item->UP_10days = $key !== $n - 1 ?
+                    $this->data[$key - 1]->UP_10days + $this->except( ( $this->data[$key]->rise_num - $this->data[$key - 1]->UP_10days ), $n ) :
+                    $this->except( array_sum( $sub_data ), $n ) ;
+            }
+            else
+            {
+                $item->UP_10days = 0.0;
+            }
+            return $item;
+        });
+
+        return true;
+
+    }
+
+    private function getWildersValue_10days_fall()
+    {
+
+        $n = $this->n2;
+
+        $this->data = $this->data->map(function ($item, $key) use ( $n ) {
+            if ( $key >= $n - 1 )
+            {
+                $sub_data = array_slice( $this->data->pluck("fall_num")->values()->toArray(), $key - ($n - 1), $n );
+                $item->DN_10days = $key !== $n - 1 ?
+                    $this->data[$key - 1]->DN_10days + $this->except( ( $this->data[$key]->fall_num - $this->data[$key - 1]->DN_10days ), $n ) :
+                    $this->except( array_sum( $sub_data ), $n ) ;
+            }
+            else
+            {
+                $item->DN_10days = 0.0;
+            }
+            return $item;
+        });
+
+        return true;
+
+    }
+
+
+    // 	取得RSI10
+
+    private function getRSI10()
+    {
+
+        $n = $this->n2;
+
+        $this->data = $this->data->map(function ($item, $key) use ( $n ) {
+            if ( $key >= $n - 1 )
+            {
+
+                $item->RSI10 = $this->except( $item->UP_10days, $item->UP_10days + $item->DN_10days ) * 100;
+
+                $item->RSI10 = round($item->RSI10, 2);
+
+            }
+            else
+            {
+                $item->RSI10 = 0.0;
+            }
+            return $item;
+        });
+
+        return true;
+
+    }
+
+
+    //  格式化
+
+    private function format()
+    {
+
+        $this->data = $this->data->map(function ( $item ) {
+            $result = [
+                "RSI5"              =>  $item->RSI5,
+                "RSI10"             =>  $item->RSI10,
+                "step"              =>  2,
+                "updated_at"        =>  date("Y-m-d H:i:s")
+            ];
+            return [ "date" => $item->data_date, "data" => $result ];
+        });
+
+        $this->data = $this->data->filter(function ($item) {
+            return $this->step_map[$item["date"]] === 1;
+        });
+
+        return true;
+
+    }
+
+    //  更新
+
+    private function update()
+    {
+
+        $data = $this->data->toArray();
+
+        $id_date_mapping = $this->id_date_mapping;
+
+        $Tech = $this->Tech;
+
+        foreach ($data as $row)
+        {
+
+            if ( isset($id_date_mapping[$row["date"]]) )
+            {
+
+                $Tech->update_data( $row["data"], $id_date_mapping[$row["date"]] );
+
+            }
+
+        }
+
+        return true;
+
+    }
+
+
+    public static function getInstance()
+    {
+
+        return new self;
+
+    }
 
 }
 

@@ -7,295 +7,260 @@ use Illuminate\Support\Facades\DB;
 class Admin_user
 {
 
-   protected $table = 'users';
+    private $table = 'users';
 
-   protected $user_role = 'user_role_relation';
+    private $user_role = 'user_role_relation';
 
-   protected $role = 'role';
+    private $role = 'role';
 
-   protected $role_service = "role_service_relation";
+    public function get_list( $page_size = 30, $orderBy = 'account', $sort = 'asc' )
+    {
 
-   public static function get_list( $page_size = 30, $orderBy = 'account', $sort = 'asc' )
-   {
-
-      $_this = new self;
-
-      $result = DB::table($_this->table)
-            ->leftJoin($_this->user_role, $_this->user_role.'.user_id', '=', $_this->table.'.id')
-            // ->leftJoin($_this->role_service, $_this->user_role.'.role_id', '=', $_this->role_service.'.role_id')
+        $result = DB::table($this->table)
+            ->leftJoin($this->user_role, $this->user_role.'.user_id', '=', $this->table.'.id')
             ->select(
-               $_this->table.'.id',
-               $_this->table.'.account',
-               $_this->table.'.email',
-               $_this->table.'.status',
-               $_this->user_role.'.role_id'
+                $this->table.'.id',
+                $this->table.'.account',
+                $this->table.'.email',
+                $this->table.'.status',
+                $this->user_role.'.role_id'
             )
             ->orderBy($orderBy, $sort)
             ->paginate($page_size);
 
-      return $result;
+        return $result;
 
-   }
+    }
 
-   public static function get_data( $id = 0 )
-   {
+    public function get_data( $id = 0 )
+    {
 
-         $_this = new self;
-      
-         $user = DB::table($_this->table)
-                  ->leftJoin($_this->user_role, $_this->user_role.'.user_id', '=', $_this->table.'.id')
-                  ->select(
-                     $_this->table.'.id',
-                     $_this->table.'.account',
-                     $_this->table.'.ori_password',
-                     $_this->table.'.email',
-                     $_this->table.'.status',
-                     $_this->user_role.'.role_id'
-                  )
-                  ->where($_this->table.".id", $id)
-                  ->get();
+        $user = DB::table($this->table)
+            ->leftJoin($this->user_role, $this->user_role.'.user_id', '=', $this->table.'.id')
+            ->select(
+                $this->table.'.id',
+                $this->table.'.account',
+                $this->table.'.ori_password',
+                $this->table.'.email',
+                $this->table.'.status',
+                $this->user_role.'.role_id'
+            )
+            ->where($this->table.".id", $id)
+            ->get();
 
-         return $user;
+        return $user;
 
-   }
+    }
 
-   public static function get_user_data()
-   {
+    public function get_user_data()
+    {
 
-         $_this = new self;
-      
-         $user = DB::table($_this->table)->get();
+        $user = DB::table($this->table)->get();
 
-         return $user;
+        return $user;
 
-   }
+    }
 
-   public static function get_active_user()
-   {
+    public function get_active_user()
+    {
 
-      $_this = new self();
+        $data = DB::table($this->table)->where("status", "=", "1")->get();
 
-      $data = DB::table($_this->table)->where("status", "=", "1")->get();
+        return $data;
 
-      return $data;
+    }
 
-   }
+    public function add_user( $data )
+    {
 
-   public static function add_user( $data )
-   {
+        $user_id = DB::table($this->table)->insertGetId($data);
 
-         $_this = new self;
-      
-         $user_id = DB::table($_this->table)->insertGetId($data);
+        return $user_id;
 
-         return $user_id;
+    }
 
-   }
+    public function edit_user( $data, $where )
+    {
 
-   public static function edit_user( $data, $where )
-   {
+        $result = DB::table($this->table)->where('id', $where)->update($data);
 
-         $_this = new self;
-      
-         $result = DB::table($_this->table)->where('id', $where)->update($data);
+        return $result;
 
-         return $result;
+    }
 
-   }
+    public function get_user_role_by_id( $id )
+    {
 
-   public static function get_user_role_by_id( $id )
-   {
+        $user_role = DB::table($this->user_role)
+            ->leftJoin($this->role, 'user_role_relation.role_id', '=', 'role.id')
+            ->select('user_role_relation.id', 'user_role_relation.role_id', 'role.name')
+            ->where("user_role_relation.user_id", "=", $id)
+            ->where($this->role.".status", "=", 1)
+            ->orderBy($this->role.'.id')
+            ->get();
 
-         $_this = new self;
-      
-         $user_role = DB::table($_this->user_role)
-                     ->leftJoin($_this->role, 'user_role_relation.role_id', '=', 'role.id')
-                     ->select('user_role_relation.id', 'user_role_relation.role_id', 'role.name')
-                     ->where("user_role_relation.user_id", "=", $id)
-                     ->where($_this->role.".status", "=", 1)
-                     ->orderBy($_this->role.'.id')
-                     ->get();
+        return $user_role;
 
-         return $user_role;
+    }
 
-   }
+    public function get_user_role()
+    {
 
-   public static function get_user_role()
-   {
+        $user_role = DB::table($this->user_role)
+            ->leftJoin($this->role, 'user_role_relation.role_id', '=', 'role.id')
+            ->select('user_role_relation.id', 'user_role_relation.user_id', 'user_role_relation.role_id', 'role.name')
+            ->where($this->role.".status", "=", 1)
+            ->get();
 
-   		$_this = new self;
-   	
-         $user_role = DB::table($_this->user_role)
-                     ->leftJoin($_this->role, 'user_role_relation.role_id', '=', 'role.id')
-                     ->select('user_role_relation.id', 'user_role_relation.user_id', 'user_role_relation.role_id', 'role.name')
-                     ->where($_this->role.".status", "=", 1)
-                     ->get();
+        return $user_role;
 
-   		return $user_role;
+    }
 
-   }
+    public function add_user_role( $data )
+    {
 
-   public static function add_user_role( $data )
-   {
+        $result = DB::table($this->user_role)->insert($data);
 
-         $_this = new self;
-      
-         $result = DB::table($_this->user_role)->insert($data);
+        return $result;
 
-         return $result;
+    }
 
-   }
+    public function delete_user_role( $user_id )
+    {
 
-   public static function delete_user_role( $user_id )
-   {
+        $result = DB::table($this->user_role)->where('user_id', '=', $user_id)->delete();
 
-         $_this = new self;
-      
-         $result = DB::table($_this->user_role)->where('user_id', '=', $user_id)->delete();
+        return $result;
 
-         return $result;
+    }
 
-   }
 
+    public function get_user_id( $data )
+    {
 
-   public static function get_user_id( $data )
-   {
+        $result = DB::table($this->table)->where('account', '=', $data["account"])->first();
 
-         $_this = new self;
-      
-         $result = DB::table($_this->table)->where('account', '=', $data["account"])->first();
+        $result = !empty($result->id) ? $result->id : 0 ;
 
-         $result = !empty($result->id) ? $result->id : 0 ; 
+        return $result;
 
-         return $result;
+    }
 
-   }
+    public function get_user_id_by_role( $role_id )
+    {
 
-   public static function get_user_id_by_role( $role_id )
-   {
+        $user = DB::table($this->user_role)->select('user_id')->where('role_id', '=', $role_id)->groupBy('user_id')->get();
 
-         $_this = new self;
-      
-         $user = DB::table($_this->user_role)->select('user_id')->where('role_id', '=', $role_id)->groupBy('user_id')->get();
+        return $user;
 
-         return $user;
+    }
 
-   }
+    public function find_user_by_assign_column( $column, $data, $id )
+    {
 
-   public static function find_user_by_assign_column( $column, $data, $id )
-   {
+        $user = DB::table($this->table)->select('id')->where( $column, $data );
 
-         $_this = new self;
-      
-         $user = DB::table($_this->table)->select('id')->where( $column, $data );
+        $user = !empty($id) ? $user->where( 'id', '!=', $id ) : $user ;
 
-         $user = !empty($id) ? $user->where( 'id', '!=', $id ) : $user ;
+        $user = $user->get();
 
-         $user = $user->get();
+        return $user;
 
-         return $user;
+    }
 
-   }
+    public function get_table_schema()
+    {
 
-   public static function get_table_schema()
-   {
+        $result = DB::select("SHOW COLUMNS FROM ". $this->table);
 
-      $_this = new self();
+        return $result;
 
-      $result = DB::select("SHOW COLUMNS FROM ". $_this->table);
+    }
 
-      return $result;
+    public function disable( $id )
+    {
 
-   }
+        $result = DB::table($this->table)->where('id', $id)->update(array("status" => 2));
 
-   public static function disable( $id )
-   {
+        return $result;
 
-      $_this = new self;
+    }
 
-      $result = DB::table($_this->table)->where('id', $id)->update(array("status" => 2));
 
-      return $result;
+    // 以關鍵字取得資料
 
-   }
+    public function get_data_by_keyword( $keyword )
+    {
 
+        $data = DB::table($this->table)
+            ->where('account', "like", '%' . $keyword . '%')
+            ->orWhere('name', "like", '%' . $keyword . '%')
+            ->where("status", 1)
+            ->get();
 
-   // 以關鍵字取得資料
+        return $data;
 
-   public static function get_data_by_keyword( $keyword )
-   {
+    }
 
-      $_this = new self();
 
-      $data = DB::table($_this->table)
-               ->where('account', "like", '%' . $keyword . '%')
-               ->orWhere('name', "like", '%' . $keyword . '%')
-               ->where("status", 1)
-               ->get();
+    // 以關鍵字取得資料
 
-      return $data;
+    public function user_data_mapping( $keyword )
+    {
 
-   }
+        $data = DB::table($this->table)
+            ->where('account', $keyword)
+            ->orWhere('name', $keyword)
+            ->where("status", 1)
+            ->get();
 
+        return $data;
 
-   // 以關鍵字取得資料
+    }
 
-   public static function user_data_mapping( $keyword )
-   {
+    // 以關鍵字取得資料
 
-      $_this = new self();
+    public function is_mail_exist( $mail )
+    {
 
-      $data = DB::table($_this->table)
-               ->where('account', $keyword)
-               ->orWhere('name', $keyword)
-               ->where("status", 1)
-               ->get();
+        $data = DB::table($this->table)
+            ->where('email', $mail)
+            ->get();
 
-      return $data;
+        return $data;
 
-   }
+    }
 
-   // 以關鍵字取得資料
+    public function forget_and_update_password( $password, $mail )
+    {
 
-   public static function is_mail_exist( $mail )
-   {
+        $result = DB::table($this->table)->where('email', $mail)->update(["password" => $password, "updated_at" => date("Y-m-d H:i:s")]);
 
-      $_this = new self();
+        return $result;
 
-      $data = DB::table($_this->table)
-               ->where('email', $mail)
-               ->get();
+    }
 
-      return $data;
 
-   }
+    // 以關鍵字取得資料
 
-   public static function forget_and_update_password( $password, $mail )
-   {
+    public function get_password( $user_id )
+    {
 
-         $_this = new self;
-      
-         $result = DB::table($_this->table)->where('email', $mail)->update(["password" => $password, "updated_at" => date("Y-m-d H:i:s")]);
+        $data = DB::table($this->table)
+            ->select("password")
+            ->where('id', $user_id)
+            ->first();
 
-         return $result;
+        return $data;
 
-   }
+    }
 
+    public static function getInstance()
+    {
 
-   // 以關鍵字取得資料
+        return new self;
 
-   public static function get_password( $user_id )
-   {
+    }
 
-      $_this = new self();
-
-      $data = DB::table($_this->table)
-               ->select("password")
-               ->where('id', $user_id)
-               ->first();
-
-      return $data;
-
-   }
 
 }

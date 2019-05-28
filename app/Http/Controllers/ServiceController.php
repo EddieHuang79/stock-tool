@@ -14,9 +14,9 @@ class ServiceController extends Controller
      */
     public function index()
     {
-        
-        return response()->json( Service_logic::get_list() );   
-        
+
+        return response()->json( Service_logic::getInstance()->get_list() );
+
     }
 
     /**

@@ -5,17 +5,17 @@ namespace App\logic;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Session;
 
-class Record_logic extends Basetool
+class Record_logic
 {
 
 	// 寫log
 
-    public static function write_log( $action, $content )
+    public function write_log( $action, $content )
     {
 
         $result = false;
 
-        if ( !empty($action) && !empty($content) ) 
+        if ( !empty($action) && !empty($content) )
         {
 
             $content = is_string($content) || is_int($content) ? $content : json_encode($content);
@@ -44,31 +44,31 @@ class Record_logic extends Basetool
 
 	// 取log
 
-    public static function get_log( $date )
+    public function get_log( $date )
     {
 
     	$result = array();
 
     	$path = "Syslog";
 
-        if ( !empty($date) ) 
+        if ( !empty($date) )
         {
 
             $filename = $path . "/sys_log_".$date.".txt";
 
             $content = Storage::exists( $filename ) ? Storage::get( $filename ) : "" ;
 
-            if (!empty($content)) 
+            if (!empty($content))
             {
 
                 $tmp = explode("\n", $content);
 
-                foreach ($tmp as $row) 
+                foreach ($tmp as $row)
                 {
 
                     $data = explode("$$$", $row);
 
-                    if (!empty($data)) 
+                    if (!empty($data))
                     {
                         $result[] = array(
                                         "header"    => isset($data[0]) ? $data[0] : "",
@@ -88,7 +88,7 @@ class Record_logic extends Basetool
 
     // 寫log
 
-    public static function write_operate_log( $action, $content )
+    public function write_operate_log( $action, $content )
     {
 
         $result = false;
@@ -126,7 +126,7 @@ class Record_logic extends Basetool
 
     // 取log
 
-    public static function get_operate_log( $date )
+    public function get_operate_log( $date )
     {
 
         $result = array();
@@ -176,7 +176,7 @@ class Record_logic extends Basetool
 
     // 寫log
 
-    public static function write_error_log( $action, $content )
+    public function write_error_log( $action, $content )
     {
 
         $result = false;
@@ -214,7 +214,7 @@ class Record_logic extends Basetool
 
     // 取log
 
-    public static function get_error_log( $date )
+    public function get_error_log( $date )
     {
 
         $result = array();
@@ -259,6 +259,14 @@ class Record_logic extends Basetool
         }
 
         return $result;
+
+    }
+
+
+    public static function getInstance()
+    {
+
+        return new self;
 
     }
 

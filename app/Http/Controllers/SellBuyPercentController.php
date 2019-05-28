@@ -14,9 +14,9 @@ class SellBuyPercentController extends Controller
     public function count_data(Request $request)
     {
 
-		SellBuyPercent_logic::count_data_logic( (int)$request->code );
+		SellBuyPercent_logic::getInstance()->count_data_logic( (int)$request->code );
 
-		return response( "done" , 200 )->header('Content-Type', 'text/plain');    	
+		return response( "done" , 200 )->header('Content-Type', 'text/plain');
 
     }
 
@@ -26,7 +26,7 @@ class SellBuyPercentController extends Controller
 	public function get_buy_sell_report(Request $request)
 	{
 
-		return response()->json( SellBuyPercent_logic::get_buy_sell_report( $request )  );  
+		return response()->json( SellBuyPercent_logic::getInstance()->get_buy_sell_report( $request )  );
 
 	}
 

@@ -8,10 +8,10 @@ class Notice_logic
 	public function noticeUser( $type, $msg )
 	{
 
-		if ( !empty($type) && is_int($type) && strlen($msg) > 0 ) 
+		if ( !empty($type) && is_int($type) && strlen($msg) > 0 )
 		{
 
-			switch ($type) 
+			switch ($type)
 			{
 
 				// FB
@@ -24,22 +24,24 @@ class Notice_logic
 						"msg_type"		=>	'text'
 					];
 
-					FB_logic::send_message( $reply_data );
+					FB_logic::getInstance()->send_message( $reply_data );
 
 					break;
-				
+
 				// Line
 
 				case 2:
 
-					$user_id = Line_logic::get_user_id_list();
+				    $Line = Line_logic::getInstance();
 
-					Line_logic::multicast_message( $user_id, $msg );
+					$user_id = $Line->get_user_id_list();
+
+                    $Line->multicast_message( $user_id, $msg );
 
 					break;
 
 			}
-			
+
 		}
 
 		return true;

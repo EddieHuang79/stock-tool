@@ -5,26 +5,37 @@ namespace App\logic;
 use App\model\TechnicalAnalysis;
 use App\Traits\SchemaFunc;
 use App\Traits\Mathlib;
+use Illuminate\Support\Facades\DB;
 
-class TechnicalAnalysis_logic extends Basetool
+class TechnicalAnalysis_logic
 {
 
 	use SchemaFunc, Mathlib;
 
+
 	// type - 1: RSV, 2: K, 3: D, 4: RSI5, 5: RSI10, 6: DIFF, 7: MACD, 8: OSC
 
-	public static function insert_format( $data, $type = 1 )
+	public function insert_format( $data )
 	{
 
 		$result = array();
 
-		if ( !empty($data) && is_array($data) && !empty($type) && is_int($type) ) 
+		if ( !empty($data) && is_array($data) )
 		{
 
 			$result = array(
+				"stock_id"       		=> isset($data["stock_id"]) ? intval($data["stock_id"]) : "",
 				"stock_data_id"       	=> isset($data["stock_data_id"]) ? intval($data["stock_data_id"]) : "",
-				"type"       			=> $type,
-				"value"       			=> isset($data["value"]) ? floatval($data["value"]) : "",
+				"code"       			=> isset($data["code"]) ? intval($data["code"]) : "",
+				"data_date"       		=> isset($data["data_date"]) ? $data["data_date"] : "",
+				"RSV"       			=> isset($data["RSV"]) ? floatval($data["RSV"]) : 0.0,
+				"K9"       				=> isset($data["K9"]) ? floatval($data["K9"]) : 0.0,
+				"D9"       				=> isset($data["D9"]) ? floatval($data["D9"]) : 0.0,
+				"RSI5"       			=> isset($data["RSI5"]) ? floatval($data["RSI5"]) : 0.0,
+				"RSI10"       			=> isset($data["RSI10"]) ? floatval($data["RSI10"]) : 0.0,
+				"DIFF"       			=> isset($data["DIFF"]) ? floatval($data["DIFF"]) : 0.0,
+				"MACD"       			=> isset($data["MACD"]) ? floatval($data["MACD"]) : 0.0,
+				"OSC"       			=> isset($data["OSC"]) ? floatval($data["OSC"]) : 0.0,
 				"created_at"    		=> date("Y-m-d H:i:s"),
 				"updated_at"    		=> date("Y-m-d H:i:s")
 			);
@@ -38,15 +49,34 @@ class TechnicalAnalysis_logic extends Basetool
 
 	// 		寫入資料
 
-	public static function add_data( $data )
+	public function add_data( $data )
 	{
 
 		$result = false;
 
-		if ( !empty($data) && is_array($data) ) 
+		if ( !empty($data) && is_array($data) )
 		{
 
-			$result = TechnicalAnalysis::add_data( $data );
+			$result = TechnicalAnalysis::getInstance()->add_data( $data );
+
+		}
+
+		return $result ;
+
+	}
+
+
+	// 		更新資料
+
+	public function update_data( $data, $id )
+	{
+
+		$result = false;
+
+		if ( !empty($data) && is_array($data) && !empty($id) && is_int($id) )
+		{
+
+			$result = TechnicalAnalysis::getInstance()->update_data( $data, $id );
 
 		}
 
@@ -57,17 +87,15 @@ class TechnicalAnalysis_logic extends Basetool
 
 	// 		取得資料
 
-	public static function get_data( $type, $id = [] )
+	public function get_data( $code, $data_date = [] )
 	{
-
-		$_this = new self();
 
 		$result = [];
 
-		if ( !empty($type) && is_int($type) ) 
+		if ( !empty($code) && is_int($code) )
 		{
 
-			$result = TechnicalAnalysis::get_data( $type, $id );
+			$result = TechnicalAnalysis::getInstance()->get_data( $code, $data_date );
 
 		}
 
@@ -80,7 +108,7 @@ class TechnicalAnalysis_logic extends Basetool
 	// 計算交錯信號
 
 	/*
-		
+
 		code: 股票代號
 		type: 1: KD, 2: RSI, 3: MACD
 		start: 偵測開始區間
@@ -88,14 +116,12 @@ class TechnicalAnalysis_logic extends Basetool
 
 	*/
 
-	public static function get_cross_sign( $type, $start, $end )
+	public function get_cross_sign( $type, $start, $end )
 	{
-
-		$_this = new self();
 
 		$result = [];
 
-		if ( !empty($type) && is_int($type) && !empty($start) && is_string($start) && !empty($end) && is_string($end) ) 
+		if ( !empty($type) && is_int($type) && !empty($start) && is_string($start) && !empty($end) && is_string($end) )
 		{
 
 			$option = [
@@ -104,30 +130,26 @@ class TechnicalAnalysis_logic extends Basetool
 				"end" 	=> $end
 			];
 
-			switch ($type) 
+			switch ($type)
 			{
 
 				// KD
 
 				case 1:
-					
-					$option["type"] = [2, 3];
 
-					$key1 = 2;
+					$key1 = "K9";
 
-					$key2 = 3;
+					$key2 = "D9";
 
 					break;
 
 				// RSI
-				
+
 				case 2:
-					
-					$option["type"] = [4, 5];
 
-					$key1 = 4;
+					$key1 = "RSI5";
 
-					$key2 = 5;
+					$key2 = "RSI10";
 
 					break;
 
@@ -135,59 +157,51 @@ class TechnicalAnalysis_logic extends Basetool
 
 				case 3:
 
-					$option["type"] = [6, 7];
+					$key1 = "DIFF";
 
-					$key1 = 6;
-
-					$key2 = 7;
+					$key2 = "MACD";
 
 					break;
 
-			}		
-			
-
-			$data = $_this->count_cross_data( $option );
-
-			$tmp = [];
-
-			foreach ($data as $row) 
-			{
-
-				$tmp[$row->code][$row->type][$row->data_date] = $row->value; 
-
 			}
+
+			$data = $this->count_cross_data( $option );
+
+			$tmp = collect( $data )->mapToGroups(function($item, $key){
+				return [$item->code => get_object_vars($item)];
+			})->toArray();
 
 			// status: 若是A值比B值大，給1，反之給2
 
-			foreach ($tmp as $code => $item) 
+			foreach ($tmp as $code => $item)
 			{
-
-				$status = floatval( current($item[$key1]) ) > floatval( current($item[$key2]) ) ? 1 : 2 ;
 
 				$cross_sign = [
 					"gold_cross" => [],
 					"dead_cross" => []
 				];
 
-				foreach ($item[$key1] as $date => $row) 
+				$status = $item[0][$key1] > $item[0][$key2] ? 1 : 2 ;
+
+				foreach ($item as $row)
 				{
 
-					switch ( $status ) 
+					switch ( $status )
 					{
 
 						// 初始值A > B，因此當出現B > A時回報死叉
 
 						case 1:
-								
-							if ( floatval( $row ) < floatval( $item[$key2][$date] ) ) 
+
+							if ( $row[$key1] < $row[$key2] )
 							{
-								
+
 								$cross_sign["dead_cross"][] = [
-									"date" 		=> $date,
-									"value1" 	=> floatval( $row ),
-									"value2" 	=> floatval( $item[$key2][$date] )
+									"date" 		=> $row["data_date"],
+									"value1" 	=> $row[$key1],
+									"value2" 	=> $row[$key2]
 								];
-								
+
 								$status = 2;
 
 							}
@@ -195,29 +209,29 @@ class TechnicalAnalysis_logic extends Basetool
 							break;
 
 						// 初始值B > A，因此當出現B > A時回報金叉
-						
+
 						case 2:
 
-							if ( floatval( $row ) > floatval( $item[$key2][$date] ) ) 
+							if ( $row[$key1] > $row[$key2] )
 							{
-								
+
 								$cross_sign["gold_cross"][] = [
-									"date" 		=> $date,
-									"value1" 	=> floatval( $row ),
-									"value2" 	=> floatval( $item[$key2][$date] )
+									"date" 		=> $row["data_date"],
+									"value1" 	=> $row[$key1],
+									"value2" 	=> $row[$key2]
 								];
 
 								$status = 1;
-								
+
 							}
 
 							break;
-					
+
 					}
 
 				}
 
-				$result[$code] = $cross_sign;				
+				$result[$code] = $cross_sign;
 
 			}
 
@@ -230,16 +244,16 @@ class TechnicalAnalysis_logic extends Basetool
 
 	// 取得資料 > for指標交叉使用
 
-	protected function count_cross_data( $option )
+	private function count_cross_data( $option )
 	{
 
 		$result = [];
 
-		if ( !empty($option) && is_array($option) ) 
+		if ( !empty($option) && is_array($option) )
 		{
 
-			$result = TechnicalAnalysis::count_cross_data( $option );
-			
+			$result = TechnicalAnalysis::getInstance()->count_cross_data( $option );
+
 		}
 
 		return $result;
@@ -257,7 +271,7 @@ class TechnicalAnalysis_logic extends Basetool
 
 	*/
 
-	public static function is_notice_data( $data )
+	public function is_notice_data( $data )
 	{
 
 		$result = [
@@ -268,34 +282,34 @@ class TechnicalAnalysis_logic extends Basetool
 
 		$diff_limit = 86400 * 5;
 
-		foreach ($data["gold_cross"] as $row) 
+		foreach ($data["gold_cross"] as $row)
 		{
 
-			if ( $row["value1"] <= 20 && $row["value2"] <= 20 && time() - strtotime($row["date"]) <= $diff_limit ) 
+			if ( $row["value1"] <= 20 && $row["value2"] <= 20 && time() - strtotime($row["date"]) <= $diff_limit )
 			{
-				
+
 				$result = [
 					"type" 		=> 1,
 					"status" 	=> true,
 					"data"		=> $row
 				];
-				
+
 			}
 
 		}
 
-		foreach ($data["dead_cross"] as $row) 
+		foreach ($data["dead_cross"] as $row)
 		{
 
-			if ( $row["value1"] >= 80 && $row["value2"] >= 80 && time() - strtotime($row["date"]) <= $diff_limit ) 
+			if ( $row["value1"] >= 80 && $row["value2"] >= 80 && time() - strtotime($row["date"]) <= $diff_limit )
 			{
-				
+
 				$result = [
 					"type" 		=> 2,
 					"status" 	=> true,
 					"data"		=> $row
 				];
-				
+
 			}
 
 		}
@@ -305,47 +319,24 @@ class TechnicalAnalysis_logic extends Basetool
 	}
 
 
-	// 		取得資料
-
-	public static function get_count_data( $type )
-	{
-
-		$_this = new self();
-
-		$result = [];
-
-		if ( !empty($type) && is_int($type) ) 
-		{
-
-			$result = TechnicalAnalysis::get_count_data( $type );
-
-		}
-
-		return $result ;
-
-	}
-
-
 	// 		上引線
 
-	public static function hasUpperShadows( $data )
+	public function hasUpperShadows( $data )
 	{
-
-		$_this = new self();
 
 		$result = [
 			"status" 	=> false,
 			"data"		=> ''
 		];
 
-		if ( !empty($data) && is_object($data) ) 
+		if ( !empty($data) && is_object($data) )
 		{
 
 			$parent = floatval($data->close) > floatval($data->open) ? floatval($data->close) : floatval($data->open) ;
 
 			$child = floatval($data->highest) - $parent;
 
-			$value = $_this->except( $child, $parent ) ;
+			$value = $this->except( $child, $parent ) ;
 
 			$result = [
 				"status" 	=> $value > 0.05,
@@ -361,17 +352,15 @@ class TechnicalAnalysis_logic extends Basetool
 
 	// 		下引線
 
-	public static function hasLowerShadows( $data )
+	public function hasLowerShadows( $data )
 	{
-
-		$_this = new self();
 
 		$result = [
 			"status" 	=> false,
 			"data"		=> ''
 		];
 
-		if ( !empty($data) && is_object($data) ) 
+		if ( !empty($data) && is_object($data) )
 		{
 
 
@@ -379,19 +368,80 @@ class TechnicalAnalysis_logic extends Basetool
 
 			$child = $parent - floatval($data->lowest);
 
-			$value = $_this->except( $child, $parent ) ;
+			$value = $this->except( $child, $parent ) ;
 
 			$result = [
 				"status" 	=> $value > 0.03,
 				"data"		=> $value
 			];
-			
+
 		}
 
 		return $result;
 
 	}
 
+
+	// 		建立初始資料
+
+	public function create_init_data()
+	{
+
+		Record_logic::getInstance()->write_operate_log( $action = 'create_init_data', $content = 'in process' );
+
+        DB::raw('START TRANSACTION');
+
+		$data = TechnicalAnalysis::getInstance()->create_init_data()->map(function( $item ){
+			return [
+				"stock_id" 		=> $item->stock_id,
+				"stock_data_id" => $item->stock_data_id,
+				"code" 			=> $item->code,
+				"data_date" 	=> $item->data_date,
+				"RSV" 			=> 0.00,
+				"K9" 			=> 0.00,
+				"D9" 			=> 0.00,
+				"RSI5" 			=> 0.00,
+				"RSI10" 		=> 0.00,
+				"DIFF" 			=> 0.00,
+				"MACD" 			=> 0.00,
+				"OSC" 			=> 0.00,
+				"created_at"   	=> date("Y-m-d H:i:s"),
+				"updated_at"    => date("Y-m-d H:i:s")
+			];
+		})->toArray();
+
+		$this->add_data( $data );
+
+        DB::raw('COMMIT');
+
+		return true;
+
+	}
+
+	//      以區間來取得資料
+
+    public function get_data_by_range( $start, $end, $code = '' )
+    {
+
+        return TechnicalAnalysis::getInstance()->get_data_by_range( $start, $end, $code );
+
+    }
+
+	//      取得技術指標更新日期
+
+    public function get_stock_tech_update_date( $type )
+    {
+
+        return TechnicalAnalysis::getInstance()->get_stock_tech_update_date( $type );
+
+    }
+
+    public static function getInstance()
+    {
+
+        return new self;
+
+    }
 
 }
 

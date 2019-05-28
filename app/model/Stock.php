@@ -9,90 +9,70 @@ class Stock
 
     protected $table = 'stock_info';
     protected $data_table = 'stock_data';
+    protected $primaryKey = 'id';
 
-	public static function get_list( )
+	public function get_list( )
 	{
 
-		$_this = new self;
-
-		$result = DB::table($_this->table)->get();
+		$result = DB::table($this->table)->get();
 
 		return $result;
 
 	}
 
-	public static function get_stock( $code )
+	public function get_stock( $code )
 	{
 
-		$_this = new self;
-
-		$result = DB::table($_this->table)->where( 'code', $code )->first();
+		$result = DB::table($this->table)->where( 'code', $code )->first();
 
 		return $result;
 
 	}
 
 
-	public static function get_stock_list( )
+	public function get_stock_list( )
 	{
 
-		$_this = new self;
-
-		$result = DB::table($_this->table)->get();
+		$result = DB::table($this->table)->get();
 
 		return $result;
 
 	}
 
-	// migrate時寫入了
-
-	// public static function add_stock_info( $data )
-	// {
-
-	// 	$_this = new self;
-
-	// 	$result = DB::table($_this->table)->insert($data);
-
-	// 	return $result;
-
-	// }
-
-	public static function add_stock_data( $data )
+	public function add_stock_data( $data )
 	{
 
-		$_this = new self;
-
-		$result = DB::table($_this->data_table)->insert($data);
+		$result = DB::table($this->data_table)->insert($data);
 
 		return $result;
 
 	}
 
-	public static function get_stock_data( $stock_id )
+	public function get_stock_data( $stock_id )
 	{
 
-		$_this = new self;
-
-		$result = DB::table($_this->data_table)->where( 'stock_id', $stock_id )->orderBy( $_this->data_table . '.data_date' )->get();
+		$result = DB::table($this->data_table)->where( 'stock_id', $stock_id )->orderBy( $this->data_table . '.data_date' )->get();
 
 		return $result;
 
 	}
 
-	public static function get_all_stock_data( $type = 1 )
+	public function get_all_stock_data( $type = 1, $sub_type = 1 )
 	{
 
-		$_this = new self;
+		$start_code = $sub_type . '000';
+		$end_code = $sub_type . '999';
 
-		$result = DB::table($_this->data_table)
-				->leftJoin($_this->table, $_this->table.'.id', '=', $_this->data_table.'.stock_id')
+		$result = DB::table($this->data_table)
+				->leftJoin($this->table, $this->table.'.id', '=', $this->data_table.'.stock_id')
 				->select(
-					$_this->table . '.code',
-					$_this->data_table . '.data_date'
+                    $this->table . '.code',
+                    $this->data_table . '.data_date'
 				);
-		$result = $type === 2 ? $result->whereBetween( $_this->data_table . '.data_date', [ date("Y-m-01"), date("Y-m-t") ] ) : $result ;
-		$result = $result->groupBy( $_this->data_table . '.data_date', $_this->table.'.code' )
-				->orderBy( $_this->data_table . '.data_date' )
+		$result = $type === 2 ? $result->whereBetween( $this->data_table . '.data_date', [ date("Y-m-01"), date("Y-m-t") ] ) : $result ;
+		$result = $type === 1 ? $result->whereBetween( $this->table . '.code', [ (int)$start_code  , (int)$end_code ] ) : $result ;
+		$result = $result->groupBy( $this->data_table . '.data_date', $this->table.'.code' )
+				->orderBy( $this->data_table . '.data_date' )
 				->get();
 
 		return $result;
@@ -100,59 +80,87 @@ class Stock
 	}
 
 
-	public static function get_all_stock_info()
+	public function get_all_stock_info()
 	{
 
-		$_this = new self;
-
-		$result = DB::table($_this->table)->get();
+		$result = DB::table($this->table)->get();
 
 		return $result;
 
 	}
 
 
-	public static function get_all_stock_data_id()
+	public function get_all_stock_data_id()
 	{
 
-		$_this = new self;
-
-		$result = DB::table($_this->data_table)
-				->leftJoin($_this->table, $_this->table.'.id', '=', $_this->data_table.'.stock_id')
+		$result = DB::table($this->data_table)
+				->leftJoin($this->table, $this->table.'.id', '=', $this->data_table.'.stock_id')
 				->select(
-					$_this->table . '.code',
-					$_this->data_table . '.id as stock_data_id'
+                    $this->table . '.code',
+                    $this->data_table . '.id as stock_data_id'
 				)
-				->groupBy( $_this->data_table . '.id', $_this->table.'.code' )
-				->orderBy( $_this->data_table . '.id' )
+				->groupBy( $this->data_table . '.id', $this->table.'.code' )
+				->orderBy( $this->data_table . '.id' )
 				->get();
 
 		return $result;
 
 	}
 
-	public static function get_stock_data_by_date_range( $start, $end )
+	public function get_stock_data_by_date_range( $start, $end, $code = '' )
 	{
 
-		$_this = new self;
-
-		$result = DB::table($_this->data_table)
-				->leftJoin($_this->table, $_this->table.'.id', '=', $_this->data_table.'.stock_id')
+		$result = DB::table($this->data_table)
+				->leftJoin($this->table, $this->table.'.id', '=', $this->data_table.'.stock_id')
 				->select(
-					$_this->table . '.code',
-					$_this->data_table . '.data_date',
-					$_this->data_table . '.volume',
-					$_this->data_table . '.open',
-					$_this->data_table . '.highest',
-					$_this->data_table . '.lowest',
-					$_this->data_table . '.close'
+					$this->table . '.code',
+					$this->data_table . '.id',
+					$this->data_table . '.data_date',
+					$this->data_table . '.volume',
+					$this->data_table . '.open',
+					$this->data_table . '.highest',
+					$this->data_table . '.lowest',
+					$this->data_table . '.close'
 				)
-				->whereBetween( $_this->data_table . '.data_date', [ $start, $end ] )
-				->orderBy( $_this->data_table . '.data_date' )
-				->get();
+				->whereBetween( $this->data_table . '.data_date', [ $start, $end ] );
+
+		$result = !empty($code) ? $result->where( "code", $code ) : $result ;
+
+		$result = $result->orderBy( $this->data_table . '.data_date' )->get();
 
 		return $result;
 
 	}
+
+
+	public function get_start_trade_date( $stock_id )
+	{
+
+		$result = DB::table($this->data_table)->select( "data_date" )->where( 'stock_id', $stock_id )->orderBy( "data_date" )->first();
+
+		return $result;
+
+	}
+
+	public function get_stock_by_none_price()
+    {
+
+        $result = DB::table($this->data_table)
+            ->leftJoin($this->table, $this->table.'.id', '=', $this->data_table.'.stock_id')
+            ->select( $this->table . ".code" )
+            ->where( 'close', '--' )
+            ->groupBy($this->data_table.'.stock_id')
+            ->get();
+
+        return $result;
+
+    }
+
+    public static function getInstance()
+    {
+
+        return new self;
+
+    }
 
 }

@@ -35,10 +35,8 @@ class Line_logic
 
 	*/
 
-	public static function receive_message( $data = '' )
+	public function receive_message( $data = '' )
 	{
-
-		$_this = new self();
 
 		$data = json_decode($data, true);
 
@@ -46,16 +44,16 @@ class Line_logic
 
 		$userId = $data["events"][0]["source"]["userId"];
 
-		$is_exist = $_this->is_exist( $userId );
+		$is_exist = $this->is_exist( $userId );
 
-		Record_logic::write_operate_log( $action = "is_exist", $content = $is_exist );
+		Record_logic::getInstance()->write_operate_log( $action = "is_exist", $content = $is_exist );
 
-		if ( $is_exist === false ) 
+		if ( $is_exist === false )
 		{
 
-			$reply_message = $_this->messageCheck( $message );
+			$reply_message = $this->messageCheck( $message );
 
-			if ( $reply_message["status"] === true ) 
+			if ( $reply_message["status"] === true )
 			{
 
 				$insert_format = [
@@ -64,17 +62,17 @@ class Line_logic
 					"updated_at" 	=> date("Y-m-d H:i:s"),
 				];
 
-				$_this->add_data( $insert_format );
-				
+				$this->add_data( $insert_format );
+
 			}
 
-			$_this->push_message( $userId, $reply_message["msg"] );
-			
+			$this->push_message( $userId, $reply_message["msg"] );
+
 		}
 		else
 		{
 
-			$_this->push_message( $userId, $msg = '您的資料已經在清單摟，目前本機器人功能不多，其他訊息無法有效處理，請多包涵！' );
+			$this->push_message( $userId, $msg = '您的資料已經在清單摟，目前本機器人功能不多，其他訊息無法有效處理，請多包涵！' );
 
 		}
 
@@ -85,14 +83,12 @@ class Line_logic
 
 	// push message
 
-	public static function push_message( $user_id, $message )
+	public function push_message( $user_id, $message )
 	{
-
-		$_this = new self();
 
 		$result = false;
 
-		if ( !empty($user_id) && is_string($user_id) && !empty($message) && is_string($message) ) 
+		if ( !empty($user_id) && is_string($user_id) && !empty($message) && is_string($message) )
 		{
 
 			$getEventsUrl = 'https://api.line.me/v2/bot/message/push';
@@ -102,7 +98,7 @@ class Line_logic
 				'messages'           	  	=> [ ["type" => 'text', "text" => $message] ]
 			);
 
-			Record_logic::write_operate_log( 'Line Send Message INPUT', $getEventsUrl );
+			Record_logic::getInstance()->write_operate_log( 'Line Send Message INPUT', $getEventsUrl );
 
 			$api_result = Curl::to( $getEventsUrl )
 			->withHeader('Authorization: Bearer ' . env("Line_TOKEN"))
@@ -110,7 +106,7 @@ class Line_logic
 			->asJson()
 			->post();
 
-			Record_logic::write_operate_log( 'Line Send Message OUTPUT', $api_result );
+			Record_logic::getInstance()->write_operate_log( 'Line Send Message OUTPUT', $api_result );
 
 			$result = true;
 
@@ -123,14 +119,12 @@ class Line_logic
 
 	// push multicast message
 
-	public static function multicast_message( $user_id, $message )
+	public function multicast_message( $user_id, $message )
 	{
-
-		$_this = new self();
 
 		$result = false;
 
-		if ( !empty($user_id) && is_array($user_id) && !empty($message) && is_string($message) ) 
+		if ( !empty($user_id) && is_array($user_id) && !empty($message) && is_string($message) )
 		{
 
 			$getEventsUrl = 'https://api.line.me/v2/bot/message/multicast';
@@ -140,7 +134,7 @@ class Line_logic
 				'messages'           	  	=> [ ["type" => 'text', "text" => $message] ]
 			);
 
-			Record_logic::write_operate_log( 'Line Send multicast Message INPUT', $getEventsUrl );
+			Record_logic::getInstance()->write_operate_log( 'Line Send multicast Message INPUT', $getEventsUrl );
 
 			$api_result = Curl::to( $getEventsUrl )
 			->withHeader('Authorization: Bearer ' . env("Line_TOKEN"))
@@ -148,7 +142,7 @@ class Line_logic
 			->asJson()
 			->post();
 
-			Record_logic::write_operate_log( 'Line Send multicast Message OUTPUT', $api_result );
+			Record_logic::getInstance()->write_operate_log( 'Line Send multicast Message OUTPUT', $api_result );
 
 			$result = true;
 
@@ -161,14 +155,12 @@ class Line_logic
 
 	// reply message
 
-	public static function reply_message( $data )
+	public function reply_message( $data )
 	{
-
-		$_this = new self();
 
 		$result = false;
 
-		if ( !empty($data) && is_array($data) ) 
+		if ( !empty($data) && is_array($data) )
 		{
 
 			$getEventsUrl = 'https://api.line.me/v2/bot/message/reply';
@@ -179,7 +171,7 @@ class Line_logic
 				'messages'           	  	=> [ ["type" => 'text', "text" => $data["message"]] ]
 			);
 
-			Record_logic::write_operate_log( 'Line Reply Message INPUT', $getEventsUrl );
+			Record_logic::getInstance()->write_operate_log( 'Line Reply Message INPUT', $getEventsUrl );
 
 			$api_result = Curl::to( $getEventsUrl )
 			->withHeader('Authorization: Bearer ' . env("Line_TOKEN"))
@@ -187,7 +179,7 @@ class Line_logic
 			->asJson()
 			->post();
 
-			Record_logic::write_operate_log( 'Line Reply Message OUTPUT', $api_result );
+			Record_logic::getInstance()->write_operate_log( 'Line Reply Message OUTPUT', $api_result );
 
 			$result = true;
 
@@ -200,7 +192,7 @@ class Line_logic
 
 	// 通關密語確認
 
-	public static function messageCheck( $msg )
+	public function messageCheck( $msg )
 	{
 
 		$result = [
@@ -208,23 +200,23 @@ class Line_logic
 			"msg" 		=> ""
 		];
 
-		if ( !empty($msg) ) 
+		if ( !empty($msg) )
 		{
 
-			switch ($msg) 
+			switch ($msg)
 			{
 
 				case '有痘痘有斑點睡前一顆敏甘寧':
-					
+
 					$result = [
 						"status" 	=> true,
 						"msg" 		=> "非常好，您的帳號已加入訊息通知清單，每日的17:30左右系統會發通知喔！再請留意！"
 					];
 
 					break;
-				
+
 				default:
-					
+
 					$result["msg"] = '您還真是調皮，故意不回答正確的密語呢，再給你一次機會喔！';
 
 					break;
@@ -242,19 +234,17 @@ class Line_logic
 	private function is_exist( $userId )
 	{
 
-		$_this = new self();
-
 		$result = false;
 
-		if ( !empty($userId) && is_string($userId) ) 
+		if ( !empty($userId) && is_string($userId) )
 		{
 
-			$data = $_this->get_data();
+			$data = $this->get_data();
 
-			$result = collect( $data )->pluck( "user_id" )->filter( function( $item, $key ) use($userId) {
+			$result = collect( $data )->pluck( "user_id" )->filter( function( $item ) use($userId) {
 				return $userId === $item;
 			} )->isNotEmpty();
-			
+
 		}
 
 		return $result;
@@ -266,8 +256,8 @@ class Line_logic
 
 	private function get_data()
 	{
-		
-		return Line::get_data();
+
+		return Line::getInstance()->get_data();
 
 	}
 
@@ -276,16 +266,16 @@ class Line_logic
 
 	private function add_data( $data )
 	{
-		
+
 		$result = false;
 
-		if ( !empty($data) && is_array($data) ) 
+		if ( !empty($data) && is_array($data) )
 		{
-			
-			Line::add_data( $data );
+
+			Line::getInstance()->add_data( $data );
 
 			$result = true;
-			
+
 		}
 
 		return $result;
@@ -295,19 +285,23 @@ class Line_logic
 
 	// 取得LineUserId清單
 
-	public static function get_user_id_list()
+	public function get_user_id_list()
 	{
 
-		$_this = new self();
-
-		$data = $_this->get_data();
+		$data = $this->get_data();
 
 		$result = collect( $data )->pluck( "user_id" )->toArray();
-		
+
 		return $result;
 
 	}
 
+    public static function getInstance()
+    {
+
+        return new self;
+
+    }
 
 }
 

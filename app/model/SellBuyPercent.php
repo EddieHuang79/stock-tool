@@ -7,121 +7,111 @@ use Illuminate\Support\Facades\DB;
 class SellBuyPercent
 {
 
-    protected $stock_info_table = 'stock_info';
-    protected $stock_data_table = 'stock_data';
-    protected $table = 'sell_buy_percent';
+    private $stock_info_table = 'stock_info';
+    private $stock_data_table = 'stock_data';
+    private $table = 'sell_buy_percent';
 
-	public static function add_sell_buy_percent_data( $data )
+	public function add_sell_buy_percent_data( $data )
 	{
 
-		$_this = new self;
-
-		$result = DB::table($_this->table)->insert($data);
+		$result = DB::table($this->table)->insert($data);
 
 		return $result;
 
 	}
 
-	public static function edit_sell_buy_percent_data( $data, $id )
+	public function edit_sell_buy_percent_data( $data, $id )
 	{
 
-		$_this = new self;
-
-		$result = DB::table($_this->table)->where('id', $id)->update($data);
+		$result = DB::table($this->table)->where('id', $id)->update($data);
 
 		return $result;
 
 	}
 
-	public static function get_statistics( $stock_id )
+	public function get_statistics( $stock_id )
 	{
 
-		$_this = new self;
-
-		$result = DB::table($_this->stock_data_table)
-					->leftJoin($_this->table, $_this->table.'.stock_data_id', '=', $_this->stock_data_table.'.id')
+		$result = DB::table($this->stock_data_table)
 					->select(
-						$_this->stock_data_table.'.id as data_id',
-						$_this->stock_data_table.'.data_date',
-						$_this->stock_data_table.'.volume',
-						$_this->stock_data_table.'.open',
-						$_this->stock_data_table.'.highest',
-						$_this->stock_data_table.'.lowest',
-						$_this->stock_data_table.'.close',
-						$_this->table.'.id',
-						$_this->table.'.spread',
-						$_this->table.'.buy1',
-						$_this->table.'.sell1',
-						$_this->table.'.buy2',
-						$_this->table.'.sell2',
-						$_this->table.'.rally_total',
-						$_this->table.'.tumbled_total',
-						$_this->table.'.rally_num1',
-						$_this->table.'.tumbled_num1',
-						$_this->table.'.rally_total_20days',
-						$_this->table.'.tumbled_total_20days',
-						$_this->table.'.result'
+                        $this->stock_data_table.'.id as data_id',
+                        $this->stock_data_table.'.data_date',
+                        $this->stock_data_table.'.volume',
+                        $this->stock_data_table.'.open',
+                        $this->stock_data_table.'.highest',
+                        $this->stock_data_table.'.lowest',
+                        $this->stock_data_table.'.close'
 					)
-					->where( $_this->stock_data_table . '.stock_id', $stock_id )
-					->orderBy( $_this->stock_data_table.'.data_date' )
+					->where( $this->stock_data_table . '.stock_id', $stock_id )
+					->orderBy( $this->stock_data_table.'.data_date' )
 					->get();
 
 		return $result;
 
 	}
 
-	public static function get_first_data_time()
+	public function get_first_data_time()
 	{
 
-		$_this = new self;
-
-		$result = DB::table($_this->stock_data_table)
+		$result = DB::table($this->stock_data_table)
 					->select(
-						$_this->stock_data_table.'.stock_id',
+                        $this->stock_data_table.'.stock_id',
 						DB::raw('min(data_date) as data_date')
 					)
-					->groupBy( $_this->stock_data_table.'.stock_id' )
+					->groupBy( $this->stock_data_table.'.stock_id' )
 					->get();
 
 		return $result;
 
 	}
 
-	public static function get_last_update_time()
+	public function get_last_update_time()
 	{
 
-		$_this = new self;
-
-		$result = DB::table($_this->stock_data_table)
+		$result = DB::table($this->stock_data_table)
 					->select(
-						$_this->stock_data_table.'.stock_id',
+                        $this->stock_data_table.'.stock_id',
 						DB::raw('max(data_date) as data_date')
 					)
-					->groupBy( $_this->stock_data_table.'.stock_id' )
+					->groupBy( $this->stock_data_table.'.stock_id' )
 					->get();
 
 		return $result;
 
 	}
 
-	public static function get_all_statistics_status()
+	public function get_last_stock_code( $last_working_date )
 	{
 
-		$_this = new self;
-
-		$result = DB::table($_this->stock_data_table)
-					->leftJoin($_this->stock_info_table, $_this->stock_info_table.'.id', '=', $_this->stock_data_table.'.stock_id')
-					->leftJoin($_this->table, $_this->table.'.stock_data_id', '=', $_this->stock_data_table.'.id')
-					->select(
-						$_this->stock_info_table.'.code',
-						$_this->stock_data_table.'.data_date',
-						$_this->table.'.result'
-					)
-					->orderBy( $_this->stock_data_table.'.data_date' )
-					->get();
+		$result = DB::table($this->table)->where( "data_date", $last_working_date )->orderBy( $this->table.'.code', "desc" )->first();
 
 		return $result;
 
 	}
+
+    public function get_data( $code )
+    {
+
+        $result = DB::table($this->table)->where( "code", $code )->get();
+
+        return $result;
+
+    }
+
+    public function get_data_by_range( $start, $end )
+    {
+
+        $result = DB::table($this->table)->whereBetween( "data_date", [$start, $end] )->get();
+
+        return $result;
+
+    }
+
+    public static function getInstance()
+    {
+
+        return new self;
+
+    }
 
 }

@@ -2,249 +2,106 @@
 
 namespace App\logic;
 
-use Ixudra\Curl\Facades\Curl;
-use Illuminate\Support\Facades\Storage;
-use File;
 use App\model\SellBuyPercent;
 use App\Traits\SchemaFunc;
+use App\Traits\Mathlib;
 
-class SellBuyPercent_logic extends Basetool
+class SellBuyPercent_logic
 {
 
-	use SchemaFunc;
+	use SchemaFunc, Mathlib;
 
-	protected $parents_dir = 'stock';
+    private $code;
+
+    private $stock_info;
+
+    private $stock_data;
+
+    private $sellBuyPercentDate;
 
 
-	/*  資料庫操作  */
+    /*  資料庫操作  */
 
-	// 		判斷資料是否已寫入，回傳日期陣列
 
-	protected function check_data_repeat( $code )
+	// 		取得股票資訊、資料
+
+    private function get_statistics()
 	{
 
-		$_this = new self();
+	    $code = $this->code;
 
-		$result = [];
+        $this->stock_info = Stock_logic::getInstance()->get_stock( $code );
 
-		if ( !empty($code) ) 
-		{
-			
-			$data = $_this->get_statistics( $code );
+        $this->stock_data = SellBuyPercent::getInstance()->get_statistics( $this->stock_info->id )->map(function ($item) {
+            $item->volume = intval( $item->volume );
+            $item->open = floatval( $item->open );
+            $item->highest = floatval( $item->highest );
+            $item->lowest = floatval( $item->lowest );
+            $item->close = floatval( $item->close );
+            return $item;
+        });
 
-			$result = $_this->pluck( $data, $key = 'data_date' );
-			
-		}
+        $this->sellBuyPercentDate = SellBuyPercent::getInstance()->get_data( $code )->pluck( "data_date" )->toArray();
+
+        return true;
+
+	}
+
+
+	// 		取得最後一筆寫入的股票代號  帶入目標工作日
+
+	public function get_last_stock_code( $last_working_date )
+	{
+
+		$result = SellBuyPercent::getInstance()->get_last_stock_code( $last_working_date );
 
 		return $result;
-
-	}
-
-
-	// 		取得統計數據
-
-	protected function get_statistics( $code )
-	{
-
-		$result = [];
-
-		if ( !empty($code) ) 
-		{
-
-			$stock_data = Stock_logic::get_stock( $code );
-
-			$result = SellBuyPercent::get_statistics( $stock_data->id );
-
-		}
-
-		return $result;
-
-	}
-
-
-	// 		寫入資料
-
-	public static function add_sell_buy_percent_data( $data )
-	{
-
-		$result = false;
-
-		if ( !empty($data) && is_array($data) ) 
-		{
-
-			$result = SellBuyPercent::add_sell_buy_percent_data( $data );
-
-		}
-
-		return $result ;
-
-	}
-
-
-	// 		編輯資料
-
-	public static function edit_sell_buy_percent_data( $data, $id )
-	{
-
-		$result = false;
-
-		if ( !empty($data) && is_array($data) && !empty($id) && is_int($id) ) 
-		{
-
-			SellBuyPercent::edit_sell_buy_percent_data( $data, $id );
-
-			$result = true;
-
-		}
-
-		return $result;
-
-	}
-
-
-	// 		取得第一筆資料日期
-
-	public static function get_first_data_time()
-	{
-
-		return SellBuyPercent::get_first_data_time();
-
-	}
-
-
-	// 		取得最後更新日期
-
-	public static function get_last_update_time()
-	{
-
-		return SellBuyPercent::get_last_update_time();
-
-	}
-
-
-	// 		取得各股票需要計算的資料量
-
-	public static function get_all_stock_count_data_num()
-	{
-
-		$stock_data = SellBuyPercent::get_all_statistics_status();
-
-		$result = collect( $stock_data )->filter(function( $item, $key ) {
-					return is_null( $item->result );
-				})->mapToGroups(function ($item, $key) {
-					return [$item->code => $item->data_date];
-				})->mapWithKeys(function ($item, $key) {
-					return [$key => $item->count()];
-				})->toArray();
-
-		return $result;
-
-	}
-
-
-	/* 資料流程 */
-
-
-	// 		預先建立報表資料
-	/*
-		
-			邏輯之後再整合			
-	
-	*/
-
-	protected function create_data( $code )
-	{
-
-		$_this = new self();
-
-		$statistics_data = $_this->get_statistics( $code );
-
-		$main = collect( $statistics_data )->filter(function( $item, $key ) {
-			return is_null($item->id);
-		})->toArray();
-
-		foreach ($main as $row) 
-		{
-
-			$insert_data = [
-				"stock_data_id" 		=> $row->data_id,
-				"spread" 				=> "",
-				"buy1" 					=> "",
-				"sell1"					=> "",
-				"buy2" 					=> "",
-				"sell2" 				=> "",
-				"rally_total" 			=> "",
-				"tumbled_total" 		=> "",
-				"rally_num1"		 	=> "",
-				"tumbled_num1" 			=> "",
-				"rally_total_20days" 	=> "",
-				"tumbled_total_20days" 	=> "",
-				"result" 				=> "",
-				"created_at" 			=> date("Y-m-d H:i:s"),
-				"updated_at" 			=> date("Y-m-d H:i:s"),
-			];
-
-			$_this->add_sell_buy_percent_data( $insert_data );
-
-		}
-
-		return true;
 
 	}
 
 
 	// 		計算收盤成交價差
-	// 		公式: 當日收盤 - 前日收盤 
+	// 		公式: 當日收盤 - 前日收盤
 
-	protected function count_spread( $code )
+    private function count_spread()
 	{
 
-		$_this = new self();
+        $this->stock_data = $this->stock_data->map(function ($item, $key) {
 
-		$result = false;
+            try{
 
-		if ( !empty($code) ) 
-		{
+                if ( $key < 1 )
+                {
 
-			$insert_data = [];
+                    throw new \Exception( true );
 
-			$data = $_this->get_statistics( $code );
+                }
 
-			foreach ($data as $key => $row) 
-			{
+                //  前日資料
 
-				if ( $key === 0 || $row->spread !== '' ) 
-				{
+                $yesterday_data = $this->stock_data[$key - 1];
 
-					continue;
-					
-				}
+                //  前日收盤
 
-				// 前日資料
+                $item->last_close = $yesterday_data->close;
 
-				$yesterday_data = $data[$key - 1];
+                //  收盤成交價差
 
-				// 前日收盤
+                $spread = round( $item->close - $item->last_close, 2 );
 
-				$last_close = floatval($yesterday_data->close);
+                $item->spread = $spread;
 
-				// 今日收盤
+            }catch (\Exception $e) {
 
-				$today_close = floatval($row->close);
+                $item->spread = 0;
 
-				$spread = round( $today_close - $last_close, 2 );
+            }
 
-				// 更新資料
+            return $item;
 
-				$_this->edit_sell_buy_percent_data( ["spread" => $spread, "updated_at" => date("Y-m-d H:i:s")], $row->id );
+        });
 
-			}
-
-			$result = true;
-			
-		}
-
-		return $result;
+		return true;
 
 	}
 
@@ -258,55 +115,37 @@ class SellBuyPercent_logic extends Basetool
 			買盤1 = 今日最高價 - 今日開盤價
 	*/
 
-	protected function count_buy1( $code )
+    private function count_buy1()
 	{
 
-		$_this = new self();
+        $this->stock_data = $this->stock_data->map(function ($item, $key) {
 
-		$result = false;
+            try{
 
-		if ( !empty($code) ) 
-		{
+                if ( $key < 1 )
+                {
 
-			$insert_data = [];
+                    throw new \Exception( true );
 
-			$data = $_this->get_statistics( $code );
+                }
 
-			foreach ($data as $key => $row) 
-			{
+                //  買盤1
 
-				if ( $key === 0 || $row->buy1 !== '' ) 
-				{
+                $buy1 = $item->close > $item->last_close ? round( $item->open - $item->last_close, 2) : round( $item->highest - $item->open, 2 ) ;
 
-					continue;
-					
-				}
+                $item->buy1 = $buy1;
 
-				// 前日資料
+            }catch (\Exception $e) {
 
-				$yesterday_data = $data[$key - 1];
+                $item->buy1 = 0;
 
-				// 前日收盤
+            }
 
-				$last_close = floatval($yesterday_data->close);
+            return $item;
 
-				// 今日收盤
+        });
 
-				$today_close = floatval($row->close);
-
-				$buy1 = $today_close > $last_close ? round( floatval($row->open) - $last_close, 2) : round( floatval($row->highest) - floatval($row->open), 2 ) ;
-
-				// 更新資料
-
-				$_this->edit_sell_buy_percent_data( ["buy1" => $buy1, "updated_at" => date("Y-m-d H:i:s")], $row->id );
-
-			}
-
-			$result = true;
-			
-		}
-
-		return $result;
+        return true;
 
 	}
 
@@ -320,55 +159,37 @@ class SellBuyPercent_logic extends Basetool
 			賣盤1 = 昨日收盤價 - 今日開盤價
 	*/
 
-	protected function count_sell1( $code )
+    private function count_sell1()
 	{
 
-		$_this = new self();
+        $this->stock_data = $this->stock_data->map(function ($item, $key) {
 
-		$result = false;
+            try{
 
-		if ( !empty($code) ) 
-		{
+                if ( $key < 1 )
+                {
 
-			$insert_data = [];
+                    throw new \Exception( true );
 
-			$data = $_this->get_statistics( $code );
+                }
 
-			foreach ($data as $key => $row) 
-			{
+                //  買盤1
 
-				if ( $key === 0 || $row->sell1 !== '' ) 
-				{
+                $sell1 = $item->close > $item->last_close ? round( $item->open - $item->lowest, 2) : round( $item->last_close - $item->open, 2 ) ;
 
-					continue;
-					
-				}
+                $item->sell1 = $sell1;
 
-				// 前日資料
+            }catch (\Exception $e) {
 
-				$yesterday_data = $data[$key - 1];
+                $item->sell1 = 0;
 
-				// 前日收盤
+            }
 
-				$last_close = floatval($yesterday_data->close);
+            return $item;
 
-				// 今日收盤
+        });
 
-				$today_close = floatval($row->close);
-
-				$sell1 = $today_close > $last_close ? round( floatval($row->open) - floatval($row->lowest), 2) : round( $last_close - floatval($row->open), 2 ) ;
-
-				// 更新資料
-
-				$_this->edit_sell_buy_percent_data( ["sell1" => $sell1, "updated_at" => date("Y-m-d H:i:s")], $row->id );
-
-			}
-
-			$result = true;
-
-		}
-
-		return $result;
+        return true;
 
 	}
 
@@ -382,57 +203,39 @@ class SellBuyPercent_logic extends Basetool
 			買盤2 = 今日收盤價 - 今日最低價
 	*/
 
-	protected function count_buy2( $code )
+    private function count_buy2()
 	{
 
-		$_this = new self();
+        $this->stock_data = $this->stock_data->map(function ($item, $key) {
 
-		$result = false;
+            try{
 
-		if ( !empty($code) ) 
-		{
+                if ( $key < 1 )
+                {
 
-			$insert_data = [];
+                    throw new \Exception( true );
 
-			$data = $_this->get_statistics( $code );
+                }
 
-			foreach ($data as $key => $row) 
-			{
+                //  買盤1
 
-				if ( $key === 0 || $row->buy2 !== '' ) 
-				{
+                $buy2 = $item->close > $item->last_close ? round( $item->highest - $item->lowest, 2) : round( $item->close - $item->lowest, 2 ) ;
 
-					continue;
-					
-				}
+                $item->buy2 = $buy2;
 
-				// 前日資料
+            }catch (\Exception $e) {
 
-				$yesterday_data = $data[$key - 1];
+                $item->buy2 = 0;
 
-				// 前日收盤
+            }
 
-				$last_close = floatval($yesterday_data->close);
+            return $item;
 
-				// 今日收盤
+        });
 
-				$today_close = floatval($row->close);
+        return true;
 
-				$buy2 = $today_close > $last_close ? round( floatval($row->highest) - floatval($row->lowest), 2) : round( $today_close - floatval($row->lowest), 2 ) ;
-
-
-				// 更新資料
-				$_this->edit_sell_buy_percent_data( ["buy2" => $buy2, "updated_at" => date("Y-m-d H:i:s")], $row->id );
-
-			}
-
-			return true;
-
-		}
-
-		return $result;
-
-	}
+    }
 
 
 	// 		計算賣盤2
@@ -444,57 +247,39 @@ class SellBuyPercent_logic extends Basetool
 			賣盤2 = 今日最高價 - 今日最低價
 	*/
 
-	protected function count_sell2( $code )
+    private function count_sell2()
 	{
 
-		$_this = new self();
+        $this->stock_data = $this->stock_data->map(function ($item, $key) {
 
-		$result = false;
+            try{
 
-		if ( !empty($code) ) 
-		{
+                if ( $key < 1 )
+                {
 
-			$insert_data = [];
+                    throw new \Exception( true );
 
-			$data = $_this->get_statistics( $code );
+                }
 
-			foreach ($data as $key => $row) 
-			{
+                //  買盤1
 
-				if ( $key === 0 || $row->sell2 !== '' ) 
-				{
+                $sell2 = $item->close > $item->last_close ? round( $item->highest - $item->close, 2) : round( $item->highest - $item->lowest, 2 ) ;
 
-					continue;
-					
-				}
+                $item->sell2 = $sell2;
 
-				// 前日資料
+            }catch (\Exception $e) {
 
-				$yesterday_data = $data[$key - 1];
+                $item->sell2 = 0;
 
-				// 前日收盤
+            }
 
-				$last_close = floatval($yesterday_data->close);
+            return $item;
 
-				// 今日收盤
+        });
 
-				$today_close = floatval($row->close);
+        return true;
 
-				$sell2 = $today_close > $last_close ? round( floatval($row->highest) - $today_close, 2) : round( floatval($row->highest) - floatval($row->lowest), 2 ) ;
-
-				// 更新資料
-
-				$_this->edit_sell_buy_percent_data( ["sell2" => $sell2, "updated_at" => date("Y-m-d H:i:s")], $row->id );
-
-			}
-
-			$result = true;
-
-		}
-
-		return $result;
-
-	}
+    }
 
 
 	// 		計算漲幅總和、跌幅總和、買盤力道張數、賣盤力道張數
@@ -506,59 +291,51 @@ class SellBuyPercent_logic extends Basetool
 			賣盤力道張數 = 成交量 * ( 跌幅總和 / ( 漲幅總和+跌幅總和) )
 	*/
 
-	protected function count_pro_data( $code )
+    private function count_pro_data()
 	{
 
-		$_this = new self();
+        $this->stock_data = $this->stock_data->map(function ($item, $key) {
 
-		$result = false;
+            try{
 
-		if ( !empty($code) ) 
-		{
+                if ( $key < 1 )
+                {
 
-			$insert_data = [];
+                    throw new \Exception( true );
 
-			$data = $_this->get_statistics( $code );
+                }
 
-			foreach ($data as $key => $row) 
-			{
+                // 漲幅總和
 
-				if ( $key === 0 || ( $row->rally_total !== '' && $row->tumbled_total !== '' && $row->rally_num1 !== '' && $row->tumbled_num1 !== '' ) ) 
-				{
+                $item->rally_total = round($item->buy1 + $item->buy2, 2) ;
 
-					continue;
-					
-				}
+                // 跌幅總和
 
-				// 漲幅總和
+                $item->tumbled_total = round($item->sell1 + $item->sell2, 2) ;
 
-				$rally_total = round($row->buy1 + $row->buy2, 2) ;
+                // 買盤力道張數
 
-				// 跌幅總和
+                $item->rally_num1 = round( $item->volume * $this->except( $item->rally_total, $item->rally_total + $item->tumbled_total ), 2 );
 
-				$tumbled_total = round($row->sell1 + $row->sell2, 2) ;
+                // 賣盤力道張數
 
-				$sum = $rally_total + $tumbled_total;
+                $item->tumbled_num1 = round( $item->volume * $this->except( $item->tumbled_total, $item->rally_total + $item->tumbled_total ), 2 );
 
-				// 買盤力道張數
 
-				$rally_num1 = $sum > 0 ? round( $row->volume * ( $rally_total / ($rally_total + $tumbled_total ) ), 2 ) : 0;
+            }catch (\Exception $e) {
 
-				// 賣盤力道張數
+                $item->rally_total = 0;
+                $item->tumbled_total = 0;
+                $item->rally_num1 = 0;
+                $item->tumbled_num1 = 0;
 
-				$tumbled_num1 = $sum > 0 ? round( $row->volume * ( $tumbled_total / ($rally_total + $tumbled_total ) ), 2 ) : 0;
+            }
 
-				// 更新資料
+            return $item;
 
-				$_this->edit_sell_buy_percent_data( ["rally_total" => $rally_total, "tumbled_total" => $tumbled_total, "rally_num1" => $rally_num1, "tumbled_num1" => $tumbled_num1, "updated_at" => date("Y-m-d H:i:s")], $row->id );
+        });
 
-			}
-
-			$result = true;
-
-		}
-
-		return $result;
+        return true;
 
 	}
 
@@ -571,191 +348,167 @@ class SellBuyPercent_logic extends Basetool
 			買賣壓力道比例 = 20天總賣盤/20天總買盤
 	*/
 
-	protected function count_20days_data_and_result( $code )
+    private function count_20days_data_and_result()
 	{
 
-		$_this = new self();
+        $this->stock_data = $this->stock_data->map(function ($item, $key) {
 
-		$result = false;
+            try{
 
-		if ( !empty($code) ) 
-		{
+                if ( $key < 19 )
+                {
 
-			$insert_data = [];
+                    throw new \Exception( true );
 
-			$data = $_this->get_statistics( $code );
+                }
 
-			foreach ($data as $key => $row) 
-			{
+                $start_key = $key - 19;
 
-				if ( $key < 20 || ( $row->rally_total_20days !== '' && $row->tumbled_total_20days !== '' ) ) 
-				{
+                // 20天總買盤
 
-					continue;
-					
-				}
+                $item->rally_total_20days = round( $this->stock_data->slice($start_key, 20)->pluck('rally_num1')->sum(), 2) ;
 
-				// 20天總買盤
+                // 20天總賣盤
 
-				$start_key = $key - 19;
+                $item->tumbled_total_20days = round( $this->stock_data->slice($start_key, 20)->pluck('tumbled_num1')->sum(), 2) ;
 
-				$end_key = $key;
+                // 買賣壓力道比例
 
-				$rally_total_20days = collect( $data )->pluck('rally_num1')->filter(function ($item, $key) use($start_key, $end_key) {
-					return $start_key <= $key && $key <= $end_key;
-				})->sum();
+                $item->result = round( $this->except($item->tumbled_total_20days, $item->rally_total_20days), 2 );
 
-				// 20天總賣盤
+            }catch (\Exception $e) {
 
-				$tumbled_total_20days = collect( $data )->pluck('tumbled_num1')->filter(function ($item, $key) use($start_key, $end_key) {
-					return $start_key <= $key && $key <= $end_key;
-				})->sum();
+                $item->rally_total_20days = 0;
+                $item->tumbled_total_20days = 0;
+                $item->result = 0;
 
-				// 買賣壓力道比例
+            }
 
-				$result = $rally_total_20days > 0 ? $tumbled_total_20days/$rally_total_20days : 0 ;
+            return $item;
 
-				// 更新資料
+        });
 
-				$_this->edit_sell_buy_percent_data( ["rally_total_20days" => $rally_total_20days, "tumbled_total_20days" => $tumbled_total_20days, "result" => $result, "updated_at" => date("Y-m-d H:i:s")], $row->id );
-
-			}
-
-			$result = true;
-			
-		}
-
-		return $result;
+        return true;
 
 	}
 
 
-	// 		輸出成報表
+	//      格式化
 
-	public static function get_buy_sell_report( $request )
+    private function format()
+    {
+
+        $this->stock_data = $this->stock_data->filter(function ($item){
+            return !in_array( $item->data_date, $this->sellBuyPercentDate );
+        })->map(function ( $item ){
+           return [
+               "stock_id"                   => $this->stock_info->id,
+               "stock_data_id"              => $item->data_id,
+               "code"                       => $this->stock_info->code,
+               "data_date"                  => $item->data_date,
+               "spread"                     => $item->spread,
+               "buy1"                       => $item->buy1,
+               "sell1"                      => $item->sell1,
+               "buy2"                       => $item->buy2,
+               "sell2"                      => $item->sell2,
+               "rally_total"                => $item->rally_total,
+               "tumbled_total"              => $item->tumbled_total,
+               "rally_num1"                 => $item->rally_num1,
+               "tumbled_num1"               => $item->tumbled_num1,
+               "rally_total_20days"         => $item->rally_total_20days,
+               "tumbled_total_20days"       => $item->tumbled_total_20days,
+               "result"                     => $item->result,
+               "created_at"                 => date("Y-m-d H:i:s"),
+               "updated_at"                 => date("Y-m-d H:i:s")
+           ];
+        });
+
+    }
+
+    // 		寫入資料
+
+    private function add_sell_buy_percent_data()
+    {
+
+        SellBuyPercent::getInstance()->add_sell_buy_percent_data( $this->stock_data->values()->toArray() );
+
+        return true ;
+
+    }
+
+	// 		計算買賣壓力
+
+	public function count_data_logic( $code )
 	{
 
-		$_this = new self();
+		$this->code = $code;
 
-		$txt = __('base');
+		//      取得數據
 
-		$result = [
-			"error" => false,
-			"data" 	=> []
-		];
+        $this->get_statistics();
 
-		try 
-		{
+        // 		計算收盤成交價差
 
-			$code = $request->code;
+        $this->count_spread();
 
-			if ( empty($code) ) 
-			{
-				
-				throw new \Exception( $txt["auth_error"] );
-				
-			}
-		
-			$data = $_this->get_statistics( $code );
+        // 		計算買盤1
 
-			if ( $data->count() < 1 ) 
-			{
-				
-				throw new \Exception( $txt["find_nothing"] );
-				
-			}
+        $this->count_buy1();
 
-			$data = collect( $data )->filter(function ($item, $key) {
-						return $item->result !== '';
-					});
+        // 		計算賣盤1
 
-			$stock = collect( $data )->map(function ($item, $key) {
-						return [ strtotime($item->data_date) * 1000, floatval($item->open), floatval($item->highest), floatval($item->lowest), floatval($item->close) ];
-					})->values()->toArray();
+        $this->count_sell1();
 
-			$result_data = collect( $data )->map(function ($item, $key) {
-						return [ strtotime($item->data_date) * 1000, floatval($item->result) ];
-					})->values()->toArray();
+        // 		計算買盤2
 
-			$result["data"] = [
-				"stock" 	=> $stock,
-				"result" 	=> $result_data,
-				"data"		=> Stock_logic::get_stock( $code )
-			];
+        $this->count_buy2();
 
-		} 
-		catch (\Exception $e) 
-		{
-			
-			$result = [
-				"error" => true,
-				"msg" 	=> $e->getMessage()
-			];
+        // 		計算賣盤2
 
-		}
+        $this->count_sell2();
 
-		return $result;
+        // 		計算漲幅總和、跌幅總和、買盤力道張數、賣盤力道張數
+
+        $this->count_pro_data();
+
+        // 		計算20天總買盤、20天總賣盤、買賣壓力道比例
+
+        $this->count_20days_data_and_result();
+
+        //      格式化
+
+        $this->format();
+
+        //      寫入資料庫
+
+        $this->add_sell_buy_percent_data();
+
+		return true;
 
 	}
 
+	//  取得買賣壓力資料
 
-	// 		自動計算買賣壓力
+	public function get_data( $code )
+    {
 
-	public static function count_data_logic( $code )
-	{
+        return SellBuyPercent::getInstance()->get_data( $code );
 
-		$_this = new self();
+    }
 
-		$result = false;
+    public function get_data_by_range( $start, $end )
+    {
 
-		if ( !empty($code) && is_int($code) ) 
-		{
+        return SellBuyPercent::getInstance()->get_data_by_range( $start, $end );
 
-			// 		暫時先這樣搞
+    }
 
-			Crontab_logic::auto_save_file_to_db();
-			Crontab_logic::auto_save_this_month_file_to_db();
+    public static function getInstance()
+    {
 
-			// 		將檔案數據轉存資料庫
+        return new self;
 
-			$_this->create_data( $code );
-
-			// 		計算收盤成交價差
-
-			$_this->count_spread( $code );
-
-			// 		計算買盤1
-
-			$_this->count_buy1( $code );
-
-			// 		計算賣盤1
-
-			$_this->count_sell1( $code );
-
-			// 		計算買盤2
-
-			$_this->count_buy2( $code );
-
-			// 		計算賣盤2
-
-			$_this->count_sell2( $code );
-
-			// 		計算漲幅總和、跌幅總和、買盤力道張數、賣盤力道張數
-
-			$_this->count_pro_data( $code );
-
-			// 		計算20天總買盤、20天總賣盤、買賣壓力道比例
-
-			$_this->count_20days_data_and_result( $code );
-
-			$result = true;
-			
-		}
-
-		return $result;
-
-	}
-
+    }
 
 }
 

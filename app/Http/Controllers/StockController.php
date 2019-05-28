@@ -4,15 +4,24 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\logic\Stock_logic;
-use App\logic\Crontab_logic;
 use App\logic\KD_logic;
-use App\logic\RSV_logic;
 use App\logic\RSI_logic;
 use App\logic\MACD_logic;
 use App\logic\TechnicalAnalysis_logic;
 use App\logic\SellBuyPercent_logic;
+use App\logic\BollingerBands_logic;
 use App\logic\Strategy_logic;
-use App\logic\Line_logic;
+use App\logic\Holiday_logic;
+use Illuminate\Support\Facades\DB;
+use App\jobs\CountTechnicalAnalysis;
+use App\jobs\CountSellBuyPercent;
+use App\jobs\AccessCSV;
+use App\jobs\SaveFromCSV;
+use App\jobs\SyncFromStockData;
+use App\jobs\BollingerBandsStrategy;
+use App\jobs\BollingerBandsStrategySimulation;
+use App\jobs\BollingerBandsStrategyBuyingJobs;
+use App\jobs\BollingerBandsStrategySellingJobs;
 
 class StockController extends Controller
 {
@@ -23,12 +32,12 @@ class StockController extends Controller
      */
     public function index()
     {
-        
-        return response()->json( Stock_logic::get_list() );    
+
+        return response()->json( Stock_logic::getInstance()->get_list() );
 
     }
 
-    /**
+    /**logic
      * Show the form for creating a new resource.
      *
      * @return \Illuminate\Http\Response
@@ -48,8 +57,8 @@ class StockController extends Controller
      */
     public function store(Request $request)
     {
-        
-        return response()->json( Stock_logic::create_stock() );    
+
+        abort(404);
 
     }
 
@@ -61,8 +70,8 @@ class StockController extends Controller
      */
     public function show($id)
     {
-        
-        return response()->json( Stock_logic::get_stock( (int)$id ) );    
+
+        return response()->json( Stock_logic::getInstance()->get_stock( (int)$id ) );
 
     }
 
@@ -74,7 +83,7 @@ class StockController extends Controller
      */
     public function edit($id)
     {
-       
+
         abort(404);
 
     }
@@ -88,8 +97,8 @@ class StockController extends Controller
      */
     public function update(Request $request, $id)
     {
-        
-        return response()->json( Stock_logic::update_stock( (int)$id ) );   
+
+        abort(404);
 
     }
 
@@ -101,7 +110,7 @@ class StockController extends Controller
      */
     public function destroy($id)
     {
-    
+
         abort(404);
 
     }
@@ -112,7 +121,7 @@ class StockController extends Controller
     public function get_stock_option(Request $request)
     {
 
-        return response()->json( Stock_logic::get_stock_option()  );  
+        return response()->json( Stock_logic::getInstance()->get_stock_option()  );
 
     }
 
@@ -128,9 +137,9 @@ class StockController extends Controller
 
         $end = $request->e;
 
-        Crontab_logic::get_stock_file( $code, $start, $end );
+        AccessCSV::getInstance()->get_stock_file( $code, $start, $end );
 
-        return response( "done" , 200 )->header('Content-Type', 'text/plain');      
+        return response( "done" , 200 )->header('Content-Type', 'text/plain');
 
     }
 
@@ -140,28 +149,17 @@ class StockController extends Controller
     public function test_entrance(Request $request)
     {
 
-        // $code = $request->code;
-        // $code = 1225;
+//        BollingerBandsStrategySimulation::getInstance()->count();
 
-        // RSV_logic::count_data( $code );
-        // KD_logic::count_data( $code );
-        // RSI_logic::count_data( $code );
-        // MACD_logic::count_data( $code );
-        // TechnicalAnalysis_logic::get_cross_sign( $code, $type = 1, $start = '2019-03-01', $end = '2019-04-04' );
-        // Crontab_logic::auto_get_data( 1 );
-        // Crontab_logic::auto_save_file_to_db();
-        // Crontab_logic::auto_count_technical_analysis( 6 );
-        // Strategy_logic::strategy1();
-        // Crontab_logic::daily_info( 1 );
-        // Crontab_logic::update_daily_data();
-        // Stock_logic::get_all_stock_update_date();
-        // Line_logic::receive_message( $data = '' );
-        // SellBuyPercent_logic::count_data_logic( $code = 2633 );
-        // Crontab_logic::auto_save_this_month_file_to_db();
+//        BollingerBandsStrategyBuyingJobs::getInstance()->count();
 
+//        BollingerBandsStrategySellingJobs::getInstance()->count();
 
-        return response( "done" , 200 )->header('Content-Type', 'text/plain');      
+//        CountTechnicalAnalysis::getInstance()->auto_count_technical_analysis( 4 );
+
+        return response( "done" , 200 )->header('Content-Type', 'text/plain');
 
     }
 
 }
+

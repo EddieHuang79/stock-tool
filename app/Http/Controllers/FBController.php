@@ -24,10 +24,10 @@ class FBController extends Controller
 
 		$verify_token = isset($_GET["hub_verify_token"]) ? $_GET["hub_verify_token"] : '' ;
 
-		Record_logic::write_operate_log('callback', $_GET);
+		Record_logic::getInstance()->write_operate_log('callback', $_GET);
 
 		$result = !empty($mode) && !empty($verify_token) && $mode === 'subscribe' && $token === $verify_token ? response( $challenge , 200 )->header('Content-Type', 'text/plain') : response()->json(['error' => 'Not authorized.'], 403) ;
-    
+
 		return $result;
 
 	}
@@ -44,7 +44,7 @@ class FBController extends Controller
 			"msg_type"		=>	'text'
 		];
 
-		FB_logic::send_message( $reply_data );
+		FB_logic::getInstance()->send_message( $reply_data );
 
 		return response( "got it!" , 200 )->header('Content-Type', 'text/plain');
 
@@ -56,7 +56,7 @@ class FBController extends Controller
 	public function set_message(Request $request)
 	{
 
-		Record_logic::write_operate_log('set_message', $request);
+		Record_logic::getInstance()->write_operate_log('set_message', $request);
 
 		return response( "got it!" , 200 )->header('Content-Type', 'text/plain');
 

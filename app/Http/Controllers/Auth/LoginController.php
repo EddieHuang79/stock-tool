@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use Illuminate\Foundation\Auth\AuthenticatesUsers;
 use Illuminate\Http\Request;
-use App\logic\Redis_tool;
 use App\logic\Admin_user_logic;
 
 class LoginController extends Controller
@@ -45,7 +44,7 @@ class LoginController extends Controller
     {
 
         return 'account';
-    
+
     }
 
 
@@ -59,16 +58,12 @@ class LoginController extends Controller
     public function login(Request $request)
     {
 
-        return response()->json( Admin_user_logic::login_verify( $request )  );    
+        return response()->json( Admin_user_logic::login_verify( $request )  );
 
     }
 
     public function logout(Request $request)
     {
-        
-        // 刪除在線人員
-            
-        Redis_tool::del_assign_online_user( $request->_token, 'token' );
 
         // Auth::logout();
 

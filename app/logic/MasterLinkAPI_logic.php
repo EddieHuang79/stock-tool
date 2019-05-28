@@ -4,7 +4,7 @@ namespace App\logic;
 
 use Ixudra\Curl\Facades\Curl;
 
-class MasterLinkAPI_logic extends Basetool
+class MasterLinkAPI_logic
 {
 
 	/*
@@ -17,8 +17,6 @@ class MasterLinkAPI_logic extends Basetool
 
 	private function login()
 	{
-
-		$_this = new self();
 
 		$result = [
 			"status" 	=> '',
@@ -85,8 +83,6 @@ class MasterLinkAPI_logic extends Basetool
 
 	private function order( $verify_code = '' )
 	{
-
-		$_this = new self();
 
 		$result = [
 			"code" 	=> '',
@@ -170,19 +166,19 @@ class MasterLinkAPI_logic extends Basetool
 			// if ( $login_data["status"] === false ) {
 
 			// 	throw new \Exception($login_data["msg"]);
-				
+
 			// }
-			
+
 			// $verify_code = $login_data["msg"];
 
 			$_this->order( $verify_code = '123456' );
 
 			dd($verify_code);
 
-		} 
+		}
 		catch (\Exception $e) {
-			
-			Record_logic::write_error_log( $action = 'process', $e->getMessage() );
+
+			Record_logic::getInstance()->write_error_log( $action = 'process', $e->getMessage() );
 
 		}
 
