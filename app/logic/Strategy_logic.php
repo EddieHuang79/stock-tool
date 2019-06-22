@@ -319,168 +319,168 @@ class Strategy_logic
 
 	*/
 
-	public function strategy2()
-	{
-
-		$start = '2016-01-01';
-
-		$end = '2018-12-31';
-
-		$data = Stock_logic::getInstance()->get_list();
-
-        $Tech = TechnicalAnalysis_logic::getInstance();
-
-		foreach ($data["data"] as $item)
-		{
-
-			$code = $item->code;
-
-			$daily_data = Stock_logic::getInstance()->get_stock_data_by_date_range( $start, $end, $code );
-
-			$stock_data = isset($daily_data[$code]) ? $daily_data[$code] : [];
-
-			$highest = 0;
-
-			$status = '';
-
-			$smaller_index = 0;
-
-			$trade_data[$code] = [
-				"buy" 	=> [],
-				"sell" 	=> []
-			];
-
-			$strategy_data = [];
-
-			$trade_result[$code] = [];
-
-			$has_stock = false;
-
-			$trade_index = 0;
-
-			foreach ($stock_data as $row)
-			{
-
-				$MACD = $Tech->get_data( $type = 8, [$row->id] );
-
-				if ( $MACD->isNotEmpty() )
-				{
-
-					$value = floatval($MACD[0]->value);
-
-					// 指標如果直接負轉正或是正轉負，reset判斷值
-
-					$now_status = $value > 0;
-
-					if ( $now_status !== $status )
-					{
-
-						$smaller_index = 0;
-
-						$highest = 0;
-
-					}
-
-					$status = $value > 0;
-
-					if ( abs($value) >= $highest )
-					{
-
-						$highest = abs($value);
-
-						$smaller_index = 0;
-
-					}
-					else
-					{
-
-						$smaller_index++;
-
-					}
-
-					if ( $smaller_index > 2 )
-					{
-
-						$trade_type = $status === true ? "sell" : "buy" ;
-
-						$price = $this->except( floatval($row->highest) + floatval($row->lowest), 2 );
-
-						$trade_data[$code][$trade_type][] = [
-							"data_date" => $row->data_date,
-							"price" 	=> $price,
-							"MACD" 		=> $value,
-						];
-
-						if ( $has_stock === false && $trade_type === "buy"  )
-						{
-
-							$has_stock = true;
-
-							$trade_result[$code][$trade_index] = [
-								"buy_date" 			=> $row->data_date,
-								"buy_price" 		=> $price,
-								"sell_date" 		=> '',
-								"sell_price" 		=> '',
-								"profie" 			=> '',
-								"percent" 			=> ''
-							];
-
-                            $strategy_data["buy"][$row->data_date] = 1;
-
-						}
-
-						if ( $has_stock === true && $trade_type === "sell" )
-						{
-
-							$trade_result[$code][$trade_index]["sell_date"] = $row->data_date;
-
-							$trade_result[$code][$trade_index]["sell_price"] = $price;
-
-							$trade_result[$code][$trade_index]["profie"] = $trade_result[$code][$trade_index]["sell_price"] - $trade_result[$code][$trade_index]["buy_price"];
-
-							$trade_result[$code][$trade_index]["percent"] = $this->except( $trade_result[$code][$trade_index]["profie"], $trade_result[$code][$trade_index]["buy_price"] );
-
-							$trade_result[$code][$trade_index]["percent"] = round($trade_result[$code][$trade_index]["percent"] * 100, 2) . '%';
-
-							$trade_index++;
-
-							$has_stock = false;
-
-                            $strategy_data["sell"][$row->data_date] = 1;
-
-						}
-
-						$smaller_index = 0;
-
-						$highest = 0;
-
-					}
-
-				}
-
-			}
-
-			// 交易
-
-			$trade_log = $this->simulate_trade( $stock_data, $strategy_data );
-
-			// 計算各股投資報酬率
-
-			$report[$code] = $this->countReturnOnInvestment( $trade_log );
-
-		}
-
-		// 回報總報酬率
-
-		$result = [
-			"detail" 	=> $report,
-			"year" 		=> $this->getYearReport( $report ),
-			"total" 	=> $this->getTotalReport( $report ),
-		];
-
-		dd($result);
-
-	}
+//	public function strategy2()
+//	{
+//
+//		$start = '2016-01-01';
+//
+//		$end = '2018-12-31';
+//
+//		$data = Stock_logic::getInstance()->get_list();
+//
+//        $Tech = TechnicalAnalysis_logic::getInstance();
+//
+//		foreach ($data["data"] as $item)
+//		{
+//
+//			$code = $item->code;
+//
+//			$daily_data = Stock_logic::getInstance()->get_stock_data_by_date_range( $start, $end, $code );
+//
+//			$stock_data = isset($daily_data[$code]) ? $daily_data[$code] : [];
+//
+//			$highest = 0;
+//
+//			$status = '';
+//
+//			$smaller_index = 0;
+//
+//			$trade_data[$code] = [
+//				"buy" 	=> [],
+//				"sell" 	=> []
+//			];
+//
+//			$strategy_data = [];
+//
+//			$trade_result[$code] = [];
+//
+//			$has_stock = false;
+//
+//			$trade_index = 0;
+//
+//			foreach ($stock_data as $row)
+//			{
+//
+//				$MACD = $Tech->get_data( $type = 8, [$row->id] );
+//
+//				if ( $MACD->isNotEmpty() )
+//				{
+//
+//					$value = floatval($MACD[0]->value);
+//
+//					// 指標如果直接負轉正或是正轉負，reset判斷值
+//
+//					$now_status = $value > 0;
+//
+//					if ( $now_status !== $status )
+//					{
+//
+//						$smaller_index = 0;
+//
+//						$highest = 0;
+//
+//					}
+//
+//					$status = $value > 0;
+//
+//					if ( abs($value) >= $highest )
+//					{
+//
+//						$highest = abs($value);
+//
+//						$smaller_index = 0;
+//
+//					}
+//					else
+//					{
+//
+//						$smaller_index++;
+//
+//					}
+//
+//					if ( $smaller_index > 2 )
+//					{
+//
+//						$trade_type = $status === true ? "sell" : "buy" ;
+//
+//						$price = $this->except( floatval($row->highest) + floatval($row->lowest), 2 );
+//
+//						$trade_data[$code][$trade_type][] = [
+//							"data_date" => $row->data_date,
+//							"price" 	=> $price,
+//							"MACD" 		=> $value,
+//						];
+//
+//						if ( $has_stock === false && $trade_type === "buy"  )
+//						{
+//
+//							$has_stock = true;
+//
+//							$trade_result[$code][$trade_index] = [
+//								"buy_date" 			=> $row->data_date,
+//								"buy_price" 		=> $price,
+//								"sell_date" 		=> '',
+//								"sell_price" 		=> '',
+//								"profie" 			=> '',
+//								"percent" 			=> ''
+//							];
+//
+//                            $strategy_data["buy"][$row->data_date] = 1;
+//
+//						}
+//
+//						if ( $has_stock === true && $trade_type === "sell" )
+//						{
+//
+//							$trade_result[$code][$trade_index]["sell_date"] = $row->data_date;
+//
+//							$trade_result[$code][$trade_index]["sell_price"] = $price;
+//
+//							$trade_result[$code][$trade_index]["profie"] = $trade_result[$code][$trade_index]["sell_price"] - $trade_result[$code][$trade_index]["buy_price"];
+//
+//							$trade_result[$code][$trade_index]["percent"] = $this->except( $trade_result[$code][$trade_index]["profie"], $trade_result[$code][$trade_index]["buy_price"] );
+//
+//							$trade_result[$code][$trade_index]["percent"] = round($trade_result[$code][$trade_index]["percent"] * 100, 2) . '%';
+//
+//							$trade_index++;
+//
+//							$has_stock = false;
+//
+//                            $strategy_data["sell"][$row->data_date] = 1;
+//
+//						}
+//
+//						$smaller_index = 0;
+//
+//						$highest = 0;
+//
+//					}
+//
+//				}
+//
+//			}
+//
+//			// 交易
+//
+//			$trade_log = $this->simulate_trade( $stock_data, $strategy_data );
+//
+//			// 計算各股投資報酬率
+//
+//			$report[$code] = $this->countReturnOnInvestment( $trade_log );
+//
+//		}
+//
+//		// 回報總報酬率
+//
+//		$result = [
+//			"detail" 	=> $report,
+//			"year" 		=> $this->getYearReport( $report ),
+//			"total" 	=> $this->getTotalReport( $report ),
+//		];
+//
+//		dd($result);
+//
+//	}
 
 
     /*
@@ -555,7 +555,7 @@ class Strategy_logic
                     throw new \Exception( "均價低於30" );
                 }
 
-                $Tech_data = $Tech->get_data( $item->code )->filter( function ($item) use( $Stock, $Tech, $start, $end ) {
+                $Tech_data = $Tech->get_data( $item->id )->filter( function ($item) use( $Stock, $Tech, $start, $end ) {
                     return $item->step === 4 && $item->percentB !== 0.0 && $start <= $item->data_date && $item->data_date <= $end;
                 } )->map(function ($item) {
                     return [

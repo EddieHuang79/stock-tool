@@ -56,7 +56,7 @@ class KD_logic
 
     private $Tech = [];
 
-    private $step_map = [];
+    private $Tech_data = [];
 
     public function count_data( $stock_id, $id_date_mapping, $Tech, $Tech_data )
 	{
@@ -70,8 +70,13 @@ class KD_logic
 
             $this->Tech = $Tech;
 
-            $this->step_map = $Tech_data->mapWithKeys(function ($item){
-               return [$item->data_date => $item->step];
+            $this->Tech_data = $Tech_data->mapWithKeys(function ($item){
+                return [$item->data_date => [
+                    "step"          => $item->step,
+                    "RSV"           => $item->RSV,
+                    "K9"            => $item->K9,
+                    "D9"            => $item->D9
+                ]];
             })->toArray();
 
             $this->data = Stock_logic::getInstance()->get_stock_data( $stock_id );
@@ -117,15 +122,23 @@ class KD_logic
     {
 
         $this->data->map(function ($item, $key) {
-            if ( $key >= $this->n - 1 )
-            {
+            try {
+
+                if ( $key < $this->n - 1 )
+                {
+                    throw new \Exception(0.0);
+                }
+
                 $sub_data = array_slice( $this->data->values()->toArray(), $key - ($this->n - 1), $this->n );
                 $highest = collect( $sub_data )->pluck( "highest" )->max();
                 $item->highestClose = $highest;
-            }
-            else
-            {
-                $item->highestClose = 0.0;
+
+            } catch (\Exception $e) {
+
+                $value = $e->getMessage();
+
+                $item->highestClose = $value;
+
             }
             return $item;
         });
@@ -141,15 +154,23 @@ class KD_logic
     {
 
         $this->data->map(function ($item, $key) {
-            if ( $key >= $this->n - 1 )
-            {
+            try {
+
+                if ( $key < $this->n - 1 )
+                {
+                    throw new \Exception(0.0);
+                }
+
                 $sub_data = array_slice( $this->data->values()->toArray(), $key - ($this->n - 1), $this->n );
                 $lowest = collect( $sub_data )->pluck( "lowest" )->min();
                 $item->lowestClose = $lowest;
-            }
-            else
-            {
-                $item->lowestClose = 0.0;
+
+            } catch (\Exception $e) {
+
+                $value = $e->getMessage();
+
+                $item->lowestClose = $value;
+
             }
             return $item;
         });
@@ -166,14 +187,22 @@ class KD_logic
     {
 
         $this->data->map(function ($item, $key) {
-            if ( $key >= $this->n - 1 )
-            {
+            try {
+
+                if ( $key < $this->n - 1 )
+                {
+                    throw new \Exception(0.0);
+                }
+
                 $item->RSV = $this->except( $item->close - $item->lowestClose, $item->highestClose - $item->lowestClose ) * 100;
                 $item->RSV = round($item->RSV, 2);
-            }
-            else
-            {
-                $item->RSV = 0.0;
+
+            } catch (\Exception $e) {
+
+                $value = $e->getMessage();
+
+                $item->RSV = $value;
+
             }
             return $item;
         });
@@ -190,15 +219,23 @@ class KD_logic
     {
 
         $this->data->map(function ($item, $key) {
-            if ( $key >= $this->n - 1 )
-            {
+            try {
+
+                if ( $key < $this->n - 1 )
+                {
+                    throw new \Exception(0.0);
+                }
+
                 $last_K_value = $key !== $this->n - 1 ? $this->data[$key - 1]->K9 : 50 ;
                 $item->K9 = $this->except( $last_K_value * 2, 3 ) + $this->except( $item->RSV, 3 );
                 $item->K9 = round( $item->K9, 2 );
-            }
-            else
-            {
-                $item->K9 = 0.0;
+
+            } catch (\Exception $e) {
+
+                $value = $e->getMessage();
+
+                $item->K9 = $value;
+
             }
             return $item;
         });
@@ -213,15 +250,23 @@ class KD_logic
     {
 
         $this->data->map(function ($item, $key) {
-            if ( $key >= $this->n - 1 )
-            {
+            try {
+
+                if ( $key < $this->n - 1 )
+                {
+                    throw new \Exception(0.0);
+                }
+
                 $last_D_value = $key !== $this->n - 1 ? $this->data[$key - 1]->D9 : 50 ;
                 $item->D9 = $this->except( $last_D_value * 2, 3 ) + $this->except( $item->K9, 3 );
                 $item->D9 = round($item->D9, 2);
-            }
-            else
-            {
-                $item->D9 = 0.0;
+
+            } catch (\Exception $e) {
+
+                $value = $e->getMessage();
+
+                $item->D9 = $value;
+
             }
             return $item;
         });
@@ -247,7 +292,7 @@ class KD_logic
         });
 
         $this->data = $this->data->filter(function ($item) {
-            return $this->step_map[$item["date"]] === 0;
+            return $this->Tech_data[$item["date"]]["step"] === 0;
         }) ;
 
         return true;

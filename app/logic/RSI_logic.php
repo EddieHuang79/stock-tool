@@ -71,7 +71,10 @@ class RSI_logic
 
     private $Tech = [];
 
-    private $step_map = [];
+    private $Tech_data = [];
+
+    private $lazy_start = '';
+
 
     // 		計算資料
 
@@ -87,9 +90,15 @@ class RSI_logic
 
             $this->Tech = $Tech;
 
-            $this->step_map = $Tech_data->mapWithKeys(function ($item){
-                return [$item->data_date => $item->step];
+            $this->Tech_data = $Tech_data->mapWithKeys(function ($item){
+                return [$item->data_date => [
+                    "step"          => $item->step,
+                    "RSI5"          => $item->RSI5,
+                    "RSI10"         => $item->RSI10,
+                ]];
             })->toArray();
+
+            $this->lazy_start = Holiday_logic::getInstance()->get_work_date( 100, date("Y-m-d"), $type = 1 );
 
 		    //  取得5檔
 
@@ -148,13 +157,26 @@ class RSI_logic
 	{
 
         $this->data = $this->data->map(function ($item, $key) {
-            if ( $key >= 1 )
-            {
+            try {
+
+                if ( $key < 1 )
+                {
+                    throw new \Exception(0.0);
+                }
+
+                if ( strtotime($item->data_date) < strtotime($this->lazy_start) )
+                {
+                    throw new \Exception(0.0);
+                }
+
                 $item->rise_num = $item->close - $this->data[$key - 1]->close > 0 ? $item->close - $this->data[$key - 1]->close : 0;
-            }
-            else
-            {
-                $item->rise_num = 0;
+
+            } catch (\Exception $e) {
+
+                $value = $e->getMessage();
+
+                $item->rise_num = $value;
+
             }
             return $item;
         });
@@ -170,13 +192,26 @@ class RSI_logic
 	{
 
         $this->data = $this->data->map(function ($item, $key) {
-            if ( $key >= 1 )
-            {
+            try {
+
+                if ( $key < 1 )
+                {
+                    throw new \Exception(0.0);
+                }
+
+                if ( strtotime($item->data_date) < strtotime($this->lazy_start) )
+                {
+                    throw new \Exception(0.0);
+                }
+
                 $item->fall_num = $item->close - $this->data[$key - 1]->close < 0 ? abs( $item->close - $this->data[$key - 1]->close ) : 0;
-            }
-            else
-            {
-                $item->fall_num = 0;
+
+            } catch (\Exception $e) {
+
+                $value = $e->getMessage();
+
+                $item->fall_num = $value;
+
             }
             return $item;
         });
@@ -197,16 +232,30 @@ class RSI_logic
         $n = $this->n1;
 
         $this->data = $this->data->map(function ($item, $key) use ( $n ) {
-            if ( $key >= $n - 1 )
-            {
+            try {
+
+                if ( $key < $n - 1 )
+                {
+                    throw new \Exception(0.0);
+                }
+
+                if ( strtotime($item->data_date) < strtotime($this->lazy_start) )
+                {
+                    throw new \Exception(0.0);
+                }
+
                 $sub_data = array_slice( $this->data->pluck("rise_num")->values()->toArray(), $key - ($n - 1), $n );
+
                 $item->UP_5days = $key !== $n - 1 ?
                     $this->data[$key - 1]->UP_5days + $this->except( ( $this->data[$key]->rise_num - $this->data[$key - 1]->UP_5days ), $n ) :
                     $this->except( array_sum( $sub_data ), $n ) ;
-            }
-            else
-            {
-                $item->UP_5days = 0.0;
+
+            } catch (\Exception $e) {
+
+                $value = $e->getMessage();
+
+                $item->UP_5days = $value;
+
             }
             return $item;
         });
@@ -221,16 +270,31 @@ class RSI_logic
         $n = $this->n1;
 
         $this->data = $this->data->map(function ($item, $key) use ( $n ) {
-            if ( $key >= $n - 1 )
-            {
+            try {
+
+                if ( $key < $n - 1 )
+                {
+                    throw new \Exception(0.0);
+                }
+
+                if ( strtotime($item->data_date) < strtotime($this->lazy_start) )
+                {
+                    throw new \Exception(0.0);
+                }
+
                 $sub_data = array_slice( $this->data->pluck("fall_num")->values()->toArray(), $key - ($n - 1), $n );
+
                 $item->DN_5days = $key !== $n - 1 ?
                     $this->data[$key - 1]->DN_5days + $this->except( ( $this->data[$key]->fall_num - $this->data[$key - 1]->DN_5days ), $n ) :
                     $this->except( array_sum( $sub_data ), $n ) ;
-            }
-            else
-            {
-                $item->DN_5days = 0.0;
+
+
+            } catch (\Exception $e) {
+
+                $value = $e->getMessage();
+
+                $item->DN_5days = $value;
+
             }
             return $item;
         });
@@ -247,17 +311,28 @@ class RSI_logic
         $n = $this->n1;
 
         $this->data = $this->data->map(function ($item, $key) use ( $n ) {
-            if ( $key >= $n - 1 )
-            {
+            try {
+
+                if ( $key < $n - 1 )
+                {
+                    throw new \Exception(0.0);
+                }
+
+                if ( isset($this->Tech_data[$item->data_date]) && $this->Tech_data[$item->data_date]["step"] === 2 )
+                {
+                    throw new \Exception($this->Tech_data[$item->data_date]["RSI5"]);
+                }
 
                 $item->RSI5 = $this->except( $item->UP_5days, $item->UP_5days + $item->DN_5days ) * 100;
 
                 $item->RSI5 = round($item->RSI5, 2);
 
-            }
-            else
-            {
-                $item->RSI5 = 0.0;
+            } catch (\Exception $e) {
+
+                $value = $e->getMessage();
+
+                $item->RSI5 = $value;
+
             }
             return $item;
         });
@@ -275,16 +350,29 @@ class RSI_logic
         $n = $this->n2;
 
         $this->data = $this->data->map(function ($item, $key) use ( $n ) {
-            if ( $key >= $n - 1 )
-            {
+            try {
+
+                if ( $key < $n - 1 )
+                {
+                    throw new \Exception(0.0);
+                }
+
+                if ( strtotime($item->data_date) < strtotime($this->lazy_start) )
+                {
+                    throw new \Exception(0.0);
+                }
+
                 $sub_data = array_slice( $this->data->pluck("rise_num")->values()->toArray(), $key - ($n - 1), $n );
                 $item->UP_10days = $key !== $n - 1 ?
                     $this->data[$key - 1]->UP_10days + $this->except( ( $this->data[$key]->rise_num - $this->data[$key - 1]->UP_10days ), $n ) :
                     $this->except( array_sum( $sub_data ), $n ) ;
-            }
-            else
-            {
-                $item->UP_10days = 0.0;
+
+            } catch (\Exception $e) {
+
+                $value = $e->getMessage();
+
+                $item->UP_10days = $value;
+
             }
             return $item;
         });
@@ -299,16 +387,29 @@ class RSI_logic
         $n = $this->n2;
 
         $this->data = $this->data->map(function ($item, $key) use ( $n ) {
-            if ( $key >= $n - 1 )
-            {
+            try {
+
+                if ( $key < $n - 1 )
+                {
+                    throw new \Exception(0.0);
+                }
+
+                if ( strtotime($item->data_date) < strtotime($this->lazy_start) )
+                {
+                    throw new \Exception(0.0);
+                }
+
                 $sub_data = array_slice( $this->data->pluck("fall_num")->values()->toArray(), $key - ($n - 1), $n );
                 $item->DN_10days = $key !== $n - 1 ?
                     $this->data[$key - 1]->DN_10days + $this->except( ( $this->data[$key]->fall_num - $this->data[$key - 1]->DN_10days ), $n ) :
                     $this->except( array_sum( $sub_data ), $n ) ;
-            }
-            else
-            {
-                $item->DN_10days = 0.0;
+
+            } catch (\Exception $e) {
+
+                $value = $e->getMessage();
+
+                $item->DN_10days = $value;
+
             }
             return $item;
         });
@@ -326,17 +427,28 @@ class RSI_logic
         $n = $this->n2;
 
         $this->data = $this->data->map(function ($item, $key) use ( $n ) {
-            if ( $key >= $n - 1 )
-            {
+            try {
+
+                if ( $key < $n - 1 )
+                {
+                    throw new \Exception(0.0);
+                }
+
+                if ( isset($this->Tech_data[$item->data_date]) && $this->Tech_data[$item->data_date]["step"] === 2 )
+                {
+                    throw new \Exception($this->Tech_data[$item->data_date]["RSI10"]);
+                }
 
                 $item->RSI10 = $this->except( $item->UP_10days, $item->UP_10days + $item->DN_10days ) * 100;
 
                 $item->RSI10 = round($item->RSI10, 2);
 
-            }
-            else
-            {
-                $item->RSI10 = 0.0;
+            } catch (\Exception $e) {
+
+                $value = $e->getMessage();
+
+                $item->RSI10 = $value;
+
             }
             return $item;
         });
@@ -362,7 +474,7 @@ class RSI_logic
         });
 
         $this->data = $this->data->filter(function ($item) {
-            return $this->step_map[$item["date"]] === 1;
+            return $this->Tech_data[$item["date"]]["step"] === 1;
         });
 
         return true;

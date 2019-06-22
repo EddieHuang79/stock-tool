@@ -195,135 +195,311 @@ class Stock_logic
 
 	// 		從檔案取得所有已更新到本月的股票的最新更新日期
 
-	public function get_all_stock_update_date( $type = 1 )
-	{
+//	public function get_all_stock_update_date( $type = 1 )
+//	{
+//
+//		$stop_trade = $this->stop_trade;
+//
+//		$filter_list = Redis_tool::getInstance()->getFilterStock();
+//
+//		// 取得指定股票區間的當月的檔案
+//
+//		switch ( $type )
+//		{
+//
+//			case 1:
+//
+//				$sec = 0;
+//
+//				$dir_name = 'st1000';
+//
+//				break;
+//
+//			case 2:
+//
+//				$sec = 5;
+//
+//				$dir_name = 'st2000';
+//
+//				break;
+//
+//			case 3:
+//
+//				$sec = 10;
+//
+//				$dir_name = 'st3000';
+//
+//				break;
+//
+//
+//			case 4:
+//
+//				$sec = 15;
+//
+//				$dir_name = 'st4000';
+//
+//				break;
+//
+//
+//			case 5:
+//
+//				$sec = 20;
+//
+//				$dir_name = 'st5000';
+//
+//				break;
+//
+//			case 6:
+//
+//				$sec = 25;
+//
+//				$dir_name = 'st6000';
+//
+//				break;
+//
+//			case 7:
+//
+//				$sec = 30;
+//
+//                $dir_name = 'st7000';
+//
+//				break;
+//
+//			case 8:
+//
+//				$sec = 35;
+//
+//				$dir_name = 'st8000';
+//
+//				break;
+//
+//			case 9:
+//
+//				$sec = 40;
+//
+//				$dir_name = 'st9000';
+//
+//				break;
+//
+//            case 10:
+//
+//                $sec = 45;
+//
+//                $dir_name = 'st2000';
+//
+//                break;
+//
+//            case 11:
+//
+//                $sec = 50;
+//
+//                $dir_name = 'st6000';
+//
+//                break;
+//
+//            case 12:
+//
+//                $sec = 55;
+//
+//                $dir_name = 'st3000';
+//
+//                break;
+//
+//		}
+//
+//		sleep($sec);
+//
+//		$week = (int)date("w");
+//
+//		$dateTime = time();
+//
+//		$dateTime = $week === 0 ? $dateTime - (86400 * 2) : $dateTime ;
+//
+//		$dateTime = $week === 6 ? $dateTime - (86400 * 1) : $dateTime ;
+//
+//		$dateTime = (int)date("H", $dateTime) < 14 ? $dateTime - (86400 * 1) : $dateTime ;
+//
+//		$dateTime = (int)date("H", $dateTime) < 14 && $week === 1 ? $dateTime - (86400 * 2) : $dateTime ;
+//
+//		// 取得所有檔案
+//
+//		$files = $this->get_dir_files( $dir_name );
+//
+//		// 產生待更新清單
+//
+//		$result = collect( $files )->filter(function( $value ) {
+//			return strpos( $value, date("Ym") ) !== false;
+//		})->mapWithKeys( function( $fileName ) {
+//			$tmp = explode("/", $fileName);
+//			$code = isset($tmp[2]) ? intval($tmp[2]) : '' ;
+//			$data = $this->stock_data_to_array( $fileName );
+//			$last = end($data);
+//			$last_date = isset($last["date"]) ? $last["date"] : '' ;
+//			return [ $code => $last_date ];
+//		})->filter(function( $date, $code ) use($dateTime, $stop_trade, $filter_list) {
+//			return $date !== date("Y-m-d", $dateTime) && !in_array($code, $stop_trade) && !in_array($code, $filter_list) ;
+//		})->slice(0, 2)->toArray();
+//
+//		asort($result);
+//
+//		return $result;
+//
+//	}
 
-		$stop_trade = $this->stop_trade;
 
-		$filter_list = Redis_tool::getInstance()->getFilterStock();
+	//      從檔案取得所有已更新到本月的股票的最新更新日期 >> 新版
 
-		// 取得指定股票區間的當月的檔案
+    public function get_all_stock_update_date_new( $type = 1 )
+    {
 
-		switch ( $type )
-		{
+        $stop_trade = $this->stop_trade;
 
-			case 1:
+        $filter_list = Redis_tool::getInstance()->getFilterStock();
 
-				$sec = 0;
+        // 取得指定股票區間的當月的檔案
 
-				$dir_name = 'st1000';
+        switch ( $type )
+        {
 
-				break;
+            case 1:
 
-			case 2:
+                $sec = 0;
 
-				$sec = 5;
+                $start = 1101;
 
-				$dir_name = 'st2000';
+                $end = 1569;
 
-				break;
+                break;
 
-			case 3:
+            case 2:
 
-				$sec = 10;
+                $sec = 5;
 
-				$dir_name = 'st3000';
+                $start = 1580;
 
-				break;
+                $end = 2221;
 
+                break;
 
-			case 4:
+            case 3:
 
-				$sec = 15;
+                $sec = 10;
 
-				$dir_name = 'st4000';
+                $start = 2227;
 
-				break;
+                $end = 2492;
 
-
-			case 5:
-
-				$sec = 20;
-
-				$dir_name = 'st5000';
-
-				break;
-
-			case 6:
-
-				$sec = 25;
-
-				$dir_name = 'st6000';
-
-				break;
-
-			case 7:
-
-				$sec = 30;
-
-				$dir_name = 'st7000';
-
-				break;
-
-			case 8:
-
-				$sec = 35;
-
-				$dir_name = 'st8000';
-
-				break;
-
-			case 9:
-
-				$sec = 40;
-
-				$dir_name = 'st9000';
-
-				break;
-
-		}
-
-		sleep($sec);
-
-		$week = (int)date("w");
-
-		$dateTime = time();
-
-		$dateTime = $week === 0 ? $dateTime - (86400 * 2) : $dateTime ;
-
-		$dateTime = $week === 6 ? $dateTime - (86400 * 1) : $dateTime ;
-
-		$dateTime = (int)date("H", $dateTime) < 14 ? $dateTime - (86400 * 1) : $dateTime ;
-
-		$dateTime = (int)date("H", $dateTime) < 14 && $week === 1 ? $dateTime - (86400 * 2) : $dateTime ;
-
-		// 取得所有檔案
-
-		$files = $this->get_dir_files( $dir_name );
-
-		// 產生待更新清單
-
-		$result = collect( $files )->filter(function( $value ) {
-			return strpos( $value, date("Ym") ) !== false;
-		})->mapWithKeys( function( $fileName ) {
-			$tmp = explode("/", $fileName);
-			$code = isset($tmp[2]) ? intval($tmp[2]) : '' ;
-			$data = $this->stock_data_to_array( $fileName );
-			$last = end($data);
-			$last_date = isset($last["date"]) ? $last["date"] : '' ;
-			return [ $code => $last_date ];
-		})->filter(function( $date, $code ) use($dateTime, $stop_trade, $filter_list) {
-			return $date !== date("Y-m-d", $dateTime) && !in_array($code, $stop_trade) && !in_array($code, $filter_list) ;
-		})->slice(0, 1)->toArray();
-
-		asort($result);
-
-		return $result;
-
-	}
+                break;
 
 
-	// 		取得股票類型(上市、上櫃)
+            case 4:
+
+                $sec = 15;
+
+                $start = 2493;
+
+                $end = 3013;
+
+                break;
+
+
+            case 5:
+
+                $sec = 20;
+
+                $start = 3014;
+
+                $end = 3339;
+
+                break;
+
+            case 6:
+
+                $sec = 25;
+
+                $start = 3346;
+
+                $end = 3704;
+
+                break;
+
+            case 7:
+
+                $sec = 30;
+
+                $start = 3705;
+
+                $end = 4747;
+
+                break;
+
+            case 8:
+
+                $sec = 35;
+
+                $start = 4754;
+
+                $end = 5443;
+
+                break;
+
+            case 9:
+
+                $sec = 40;
+
+                $start = 5450;
+
+                $end = 6187;
+
+                break;
+
+            case 10:
+
+                $sec = 45;
+
+                $start = 6188;
+
+                $end = 6535;
+
+                break;
+
+            case 11:
+
+                $sec = 50;
+
+                $start = 6538;
+
+                $end = 8404;
+
+                break;
+
+            case 12:
+
+                $sec = 55;
+
+                $start = 8406;
+
+                $end = 912398;
+
+                break;
+
+        }
+
+        $result = [
+            "sec"           => $sec,
+            "start"         => $start,
+            "end"           => $end,
+            "stop_trade"    => $stop_trade,
+            "filter_list"   => $filter_list
+        ];
+
+        return $result;
+
+    }
+
+
+
+    // 		取得股票類型(上市、上櫃)
 
 	public function get_stock_type()
 	{
@@ -366,6 +542,37 @@ class Stock_logic
     {
 
         return Stock::getInstance()->get_stock_by_none_price();
+
+    }
+
+
+    // 		取得等待更新的股票
+
+    public function get_wait_to_update_stock( $start, $end, $except )
+    {
+
+        $result = $this->get_all_stock_info()->filter(function ($item, $key) use($start, $end, $except) {
+            return $start <= $key && $key <= $end && !in_array($key, $except);
+        })->map( function($item, $key) {
+            return $key;
+        })->slice(0, 1)->values()->toArray();
+
+        return $result;
+
+    }
+
+
+    public function get_stock_id( $code = [] )
+    {
+
+        return Stock::getInstance()->get_stock_id( $code );
+
+    }
+
+    public function get_assign_code_stock_data( $stock_id = [] )
+    {
+
+        return Stock::getInstance()->get_assign_code_stock_data( $stock_id );
 
     }
 

@@ -4,17 +4,20 @@ namespace App\jobs;
 
 use App\abstracts\BollingerBandsStrategy;
 
+
 /*
  買進條件:
     1.  均價 > 20
     2.  percentB >= 0.8
     3.  sellBuyPercent < 0.8
+    4.  10日平均成交量 > 500
+    5.  bandwidth <= 0.05
  賣出條件:
     1.  percentB < 0.8
-    2.  sellBuyPercent > 0.9
+    2.  sellBuyPercent > 0.8
 */
 
-class BollingerBandsStrategySimulation extends BollingerBandsStrategy
+class BollingerBandsStrategySimulation3 extends BollingerBandsStrategy
 {
 
     // 交易策略
@@ -29,16 +32,23 @@ class BollingerBandsStrategySimulation extends BollingerBandsStrategy
 
             $sellBuyPercent = isset($this->sellBuyPercent[$row["data_date"]]) ? $this->sellBuyPercent[$row["data_date"]] : 0 ;
 
-            if ( $row["percentB"] >= 0.8 && !empty($sellBuyPercent) && $sellBuyPercent <= 0.8 && $has_stock === false )
+            if ( $row["percentB"] >= 0.8 && !empty($sellBuyPercent) && $sellBuyPercent <= 0.8 && $has_stock === false && $row["bandwidth"] <= 0.05 )
             {
 
-                $has_stock = true;
+                $this->set_volume( $row["data_date"] );
 
-                $this->buy_date[] = $row;
+                if ( $this->volume_data > $this->volume_limit )
+                {
+
+                    $has_stock = true;
+
+                    $this->buy_date[] = $row;
+
+                }
 
             }
 
-            if ( $has_stock === true && $row["percentB"] < 0.8 && $sellBuyPercent > 0.9 )
+            if ( $has_stock === true && $row["percentB"] < 0.8 && $sellBuyPercent > 0.8 )
             {
 
                 $has_stock = false;
@@ -48,21 +58,21 @@ class BollingerBandsStrategySimulation extends BollingerBandsStrategy
             }
 
         }
+
     }
 
     public function do()
     {
 
-        $this->set_file_name( "Strategy/BollingerBandsStrategySimulation1.txt" );
+        $this->set_file_name( "Strategy/BollingerBandsStrategySimulation3.txt" );
 
-        $this->set_log_title( "BollingerBandsStrategySimulation1" );
+        $this->set_log_title( "BollingerBandsStrategySimulation3" );
 
         $this->count();
 
         return true;
 
     }
-
 
     public static function getInstance()
     {

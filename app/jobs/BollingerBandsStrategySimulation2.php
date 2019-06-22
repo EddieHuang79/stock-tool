@@ -11,10 +11,11 @@ use App\abstracts\BollingerBandsStrategy;
     3.  sellBuyPercent < 0.8
  賣出條件:
     1.  percentB < 0.8
-    2.  sellBuyPercent > 0.9
+    2.  sellBuyPercent > 0.8
 */
 
-class BollingerBandsStrategySimulation extends BollingerBandsStrategy
+
+class BollingerBandsStrategySimulation2 extends BollingerBandsStrategy
 {
 
     // 交易策略
@@ -38,7 +39,7 @@ class BollingerBandsStrategySimulation extends BollingerBandsStrategy
 
             }
 
-            if ( $has_stock === true && $row["percentB"] < 0.8 && $sellBuyPercent > 0.9 )
+            if ( $has_stock === true && $row["percentB"] < 0.8 && $sellBuyPercent > 0.8 )
             {
 
                 $has_stock = false;
@@ -48,21 +49,21 @@ class BollingerBandsStrategySimulation extends BollingerBandsStrategy
             }
 
         }
+
     }
 
     public function do()
     {
 
-        $this->set_file_name( "Strategy/BollingerBandsStrategySimulation1.txt" );
+        $this->set_file_name( "Strategy/BollingerBandsStrategySimulation2.txt" );
 
-        $this->set_log_title( "BollingerBandsStrategySimulation1" );
+        $this->set_log_title( "BollingerBandsStrategySimulation2" );
 
         $this->count();
 
         return true;
 
     }
-
 
     public static function getInstance()
     {

@@ -87,15 +87,15 @@ class TechnicalAnalysis_logic
 
 	// 		取得資料
 
-	public function get_data( $code, $data_date = [] )
+	public function get_data( $stock_id, $start = '', $end = '' )
 	{
 
 		$result = [];
 
-		if ( !empty($code) && is_int($code) )
+		if ( !empty($stock_id) && is_int($stock_id) )
 		{
 
-			$result = TechnicalAnalysis::getInstance()->get_data( $code, $data_date );
+			$result = TechnicalAnalysis::getInstance()->get_data( $stock_id, $start, $end );
 
 		}
 
@@ -433,6 +433,13 @@ class TechnicalAnalysis_logic
     {
 
         return TechnicalAnalysis::getInstance()->get_stock_tech_update_date( $type );
+
+    }
+
+    public function get_today_percentB( $stock_id = [], $date )
+    {
+
+        return TechnicalAnalysis::getInstance()->get_today_percentB( $stock_id, $date );
 
     }
 

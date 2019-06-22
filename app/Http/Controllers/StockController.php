@@ -18,10 +18,15 @@ use App\jobs\CountSellBuyPercent;
 use App\jobs\AccessCSV;
 use App\jobs\SaveFromCSV;
 use App\jobs\SyncFromStockData;
+use App\jobs\BollingerBandsStrategyGetAssignStock;
 use App\jobs\BollingerBandsStrategy;
-use App\jobs\BollingerBandsStrategySimulation;
 use App\jobs\BollingerBandsStrategyBuyingJobs;
 use App\jobs\BollingerBandsStrategySellingJobs;
+use App\query\deleteDuplicate;
+use App\query\deleteNotUpdateCodeFromRedis;
+use App\query\updateNoDataStock;
+use App\query\countAssignSellBuyPercent;
+use Ixudra\Curl\Facades\Curl;
 
 class StockController extends Controller
 {
@@ -149,13 +154,11 @@ class StockController extends Controller
     public function test_entrance(Request $request)
     {
 
-//        BollingerBandsStrategySimulation::getInstance()->count();
+//        updateNoDataStock::getInstance()->update();
 
-//        BollingerBandsStrategyBuyingJobs::getInstance()->count();
+//        CountTechnicalAnalysis::getInstance()->auto_count_technical_analysis( 1 );
 
-//        BollingerBandsStrategySellingJobs::getInstance()->count();
-
-//        CountTechnicalAnalysis::getInstance()->auto_count_technical_analysis( 4 );
+//        countAssignSellBuyPercent::getInstance()->auto_count_SellBuyPercent();
 
         return response( "done" , 200 )->header('Content-Type', 'text/plain');
 

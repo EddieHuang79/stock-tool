@@ -65,6 +65,46 @@ class Holiday_logic
 
 	}
 
+	//  當日是否為假日
+
+    public function is_holiday( $date )
+    {
+
+        $result = false;
+
+        try
+        {
+
+            $Holiday = new Holiday();
+
+            $Holiday_array = $Holiday->get_list()->pluck("holiday_date")->toArray();
+
+            if ( in_array( date("Y-m-d", $date), $Holiday_array ) )
+            {
+
+                throw new \Exception(true);
+
+            }
+
+            if ( in_array( (int)date("w", $date), [0 ,6] ) )
+            {
+
+                throw new \Exception(true);
+
+            }
+
+        }
+        catch (\Exception $e)
+        {
+
+            $result = true;
+
+        }
+
+        return $result;
+
+    }
+
 
     public static function getInstance()
     {

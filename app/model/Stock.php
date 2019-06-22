@@ -83,7 +83,7 @@ class Stock
 	public function get_all_stock_info()
 	{
 
-		$result = DB::table($this->table)->get();
+		$result = DB::table($this->table)->orderBy("code")->get();
 
 		return $result;
 
@@ -114,7 +114,8 @@ class Stock
 				->leftJoin($this->table, $this->table.'.id', '=', $this->data_table.'.stock_id')
 				->select(
 					$this->table . '.code',
-					$this->data_table . '.id',
+                    $this->data_table . '.id',
+                    $this->data_table . '.stock_id',
 					$this->data_table . '.data_date',
 					$this->data_table . '.volume',
 					$this->data_table . '.open',
@@ -150,6 +151,38 @@ class Stock
             ->select( $this->table . ".code" )
             ->where( 'close', '--' )
             ->groupBy($this->data_table.'.stock_id')
+            ->get();
+
+        return $result;
+
+    }
+
+    public function get_stock_id( $code )
+    {
+
+        $result = DB::table($this->table)->select( $this->table . ".id", $this->table . ".code" )->whereIn( 'code', $code )->get();
+
+        return $result;
+
+    }
+
+    public function get_assign_code_stock_data( $stock_id = [] )
+    {
+
+        $result = DB::table($this->data_table)
+            ->select(
+                $this->data_table . '.id',
+                $this->data_table . '.stock_id',
+                $this->data_table . '.data_date',
+                $this->data_table . '.volume',
+                $this->data_table . '.open',
+                $this->data_table . '.highest',
+                $this->data_table . '.lowest',
+                $this->data_table . '.close'
+            )
+            ->whereIn( $this->data_table . '.stock_id', $stock_id )
+            ->orderBy( $this->data_table . '.stock_id' )
+            ->orderBy( $this->data_table . '.data_date' )
             ->get();
 
         return $result;

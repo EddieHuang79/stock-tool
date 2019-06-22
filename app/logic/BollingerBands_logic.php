@@ -23,7 +23,9 @@ class BollingerBands_logic
 
     private $Tech = [];
 
-    private $step_map = [];
+    private $Tech_data = [];
+
+    private $lazy_start = '';
 
     //  布林核心
 
@@ -39,9 +41,18 @@ class BollingerBands_logic
 
             $this->Tech = $Tech;
 
-            $this->step_map = $Tech_data->mapWithKeys(function ($item){
-                return [$item->data_date => $item->step];
+            $this->Tech_data = $Tech_data->mapWithKeys(function ($item){
+                return [$item->data_date => [
+                    "step"              =>  $item->step,
+                    "MA20"              =>  $item->MA20,
+                    "upperBand"         =>  $item->upperBand,
+                    "lowerBand"         =>  $item->lowerBand,
+                    "PercentB"          =>  $item->percentB,
+                    "Bandwidth"         =>  $item->bandwidth,
+                ]];
             })->toArray();
+
+            $this->lazy_start = Holiday_logic::getInstance()->get_work_date( 100, date("Y-m-d"), $type = 1 );
 
             // 基本五檔
 
@@ -96,15 +107,33 @@ class BollingerBands_logic
     {
 
         $this->data = $this->data->map(function ($item, $key) {
-            if ( $key >= $this->n - 1 )
-            {
+            try {
+
+                if ( $key < $this->n - 1 )
+                {
+                    throw new \Exception(0.0);
+                }
+
+                if ( isset($this->Tech_data[$item->data_date]) && $this->Tech_data[$item->data_date]["step"] === 4 )
+                {
+                    throw new \Exception($this->Tech_data[$item->data_date]["MA20"]);
+                }
+
+                if ( strtotime($item->data_date) < strtotime($this->lazy_start) )
+                {
+                    throw new \Exception(0.0);
+                }
+
                 $sub_data = array_slice( $this->data->pluck("close")->values()->toArray(), $key - ($this->n - 1), $this->n );
                 $item->MA20 = $this->except( array_sum($sub_data) , $this->n );
                 $item->MA20 = round($item->MA20, 2);
-            }
-            else
-            {
-                $item->MA20 = 0.0;
+
+            } catch (\Exception $e) {
+
+                $value = $e->getMessage();
+
+                $item->MA20 = $value;
+
             }
             return $item;
         });
@@ -119,8 +148,18 @@ class BollingerBands_logic
     {
 
         $this->data = $this->data->map(function ($item, $key) {
-            if ( $key >= $this->n - 1 )
-            {
+            try {
+
+                if ( $key < $this->n - 1 )
+                {
+                    throw new \Exception(0.0);
+                }
+
+                if ( strtotime($item->data_date) < strtotime($this->lazy_start) )
+                {
+                    throw new \Exception(0.0);
+                }
+
                 $sub_data = array_slice( $this->data->pluck("close")->values()->toArray(), $key - ($this->n - 1), $this->n );
                 $avg = $this->except( array_sum($sub_data) , $this->n );
                 $process = collect( $sub_data )->map(function ( $item ) use ($avg) {
@@ -128,10 +167,13 @@ class BollingerBands_logic
                 })->values()->toArray();
                 $sum = array_sum($process);
                 $item->standardDeviation = sqrt( $this->except($sum, $this->n) );
-            }
-            else
-            {
-                $item->standardDeviation = 0.0;
+
+            } catch (\Exception $e) {
+
+                $value = $e->getMessage();
+
+                $item->standardDeviation = $value;
+
             }
             return $item;
         });
@@ -147,13 +189,31 @@ class BollingerBands_logic
     {
 
         $this->data = $this->data->map(function ( $item, $key ) {
-            if ( $key >= $this->n - 1 )
-            {
+            try {
+
+                if ( $key < $this->n - 1 )
+                {
+                    throw new \Exception(0.0);
+                }
+
+                if ( isset($this->Tech_data[$item->data_date]) && $this->Tech_data[$item->data_date]["step"] === 4 )
+                {
+                    throw new \Exception($this->Tech_data[$item->data_date]["upperBand"]);
+                }
+
+                if ( strtotime($item->data_date) < strtotime($this->lazy_start) )
+                {
+                    throw new \Exception(0.0);
+                }
+
                 $item->upperBand = round( $item->MA20 + $item->standardDeviation * 2, 2 );
-            }
-            else
-            {
-                $item->upperBand = 0.0;
+
+            } catch (\Exception $e) {
+
+                $value = $e->getMessage();
+
+                $item->upperBand = $value;
+
             }
             return $item;
         });
@@ -168,13 +228,31 @@ class BollingerBands_logic
     {
 
         $this->data = $this->data->map(function ( $item, $key ) {
-            if ( $key >= $this->n - 1 )
-            {
+            try {
+
+                if ( $key < $this->n - 1 )
+                {
+                    throw new \Exception(0.0);
+                }
+
+                if ( isset($this->Tech_data[$item->data_date]) && $this->Tech_data[$item->data_date]["step"] === 4 )
+                {
+                    throw new \Exception($this->Tech_data[$item->data_date]["lowerBand"]);
+                }
+
+                if ( strtotime($item->data_date) < strtotime($this->lazy_start) )
+                {
+                    throw new \Exception(0.0);
+                }
+
                 $item->lowerBand = round( $item->MA20 - $item->standardDeviation * 2, 2 );
-            }
-            else
-            {
-                $item->lowerBand = 0.0;
+
+            } catch (\Exception $e) {
+
+                $value = $e->getMessage();
+
+                $item->lowerBand = $value;
+
             }
             return $item;
         });
@@ -189,14 +267,32 @@ class BollingerBands_logic
     {
 
         $this->data = $this->data->map(function ( $item, $key ) {
-            if ( $key >= $this->n - 1 )
-            {
+            try {
+
+                if ( $key < $this->n - 1 )
+                {
+                    throw new \Exception(0.0);
+                }
+
+                if ( isset($this->Tech_data[$item->data_date]) && $this->Tech_data[$item->data_date]["step"] === 4 )
+                {
+                    throw new \Exception($this->Tech_data[$item->data_date]["PercentB"]);
+                }
+
+                if ( strtotime($item->data_date) < strtotime($this->lazy_start) )
+                {
+                    throw new \Exception(0.0);
+                }
+
                 $PercentB = $this->except( $item->close - $item->lowerBand, $item->upperBand - $item->lowerBand );
                 $item->PercentB = round( $PercentB, 2 );
-            }
-            else
-            {
-                $item->PercentB = 0.0;
+
+            } catch (\Exception $e) {
+
+                $value = $e->getMessage();
+
+                $item->PercentB = $value;
+
             }
             return $item;
         });
@@ -211,14 +307,32 @@ class BollingerBands_logic
     {
 
         $this->data = $this->data->map(function ( $item, $key ) {
-            if ( $key >= $this->n - 1 )
-            {
+            try {
+
+                if ( $key < $this->n - 1 )
+                {
+                    throw new \Exception(0.0);
+                }
+
+                if ( isset($this->Tech_data[$item->data_date]) && $this->Tech_data[$item->data_date]["step"] === 4 )
+                {
+                    throw new \Exception($this->Tech_data[$item->data_date]["Bandwidth"]);
+                }
+
+                if ( strtotime($item->data_date) < strtotime($this->lazy_start) )
+                {
+                    throw new \Exception(0.0);
+                }
+
                 $Bandwidth = $this->except( $item->upperBand - $item->lowerBand, $item->MA20 );
                 $item->Bandwidth = round( $Bandwidth, 2 );
-            }
-            else
-            {
-                $item->Bandwidth = 0.0;
+
+            } catch (\Exception $e) {
+
+                $value = $e->getMessage();
+
+                $item->Bandwidth = $value;
+
             }
             return $item;
         });
@@ -246,7 +360,7 @@ class BollingerBands_logic
         });
 
         $this->data = $this->data->filter(function ($item) {
-            return $this->step_map[$item["date"]] === 3;
+            return $this->Tech_data[$item["date"]]["step"] === 3;
         });
 
         return true;

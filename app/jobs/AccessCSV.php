@@ -7,6 +7,7 @@ use Ixudra\Curl\Facades\Curl;
 use App\Traits\stockFileLib;
 use App\logic\Stock_logic;
 use App\logic\Record_logic;
+use App\logic\Redis_tool;
 
 class AccessCSV
 {
@@ -208,15 +209,37 @@ class AccessCSV
     public function update_daily_data( $type = 1 )
     {
 
+        $date = time();
+
+        //  刪除清單
+
+        $Redis = Redis_tool::getInstance();
+
+        $Redis->delUpdateDaily();
+
+        //  取得股票設定
+
+        $config = Stock_logic::getInstance()->get_all_stock_update_date_new( $type );
+
+        sleep( $config["sec"] );
+
+        //  取得已更新清單
+
+        $update_list = $Redis->getUpdateDaily( date("Ymd", $date) );
+
+        $update_list = collect($update_list)->map(function ($item){
+            return intval($item);
+        })->toArray();
+
         // 待更新的股票資料
 
-        $list = Stock_logic::getInstance()->get_all_stock_update_date( $type );
+        $wait_to_update_stock = Stock_logic::getInstance()->get_wait_to_update_stock( $config["start"], $config["end"], $update_list );
 
         // 取得股票類型
 
         $code_type_mapping = Stock_logic::getInstance()->get_stock_type();
 
-        foreach ($list as $code => $date)
+        foreach ($wait_to_update_stock as $code)
         {
 
             $date = date("Ym01");
@@ -230,6 +253,8 @@ class AccessCSV
             $this->saveStockFile( $data, $date, $code, $type );
 
             Record_logic::getInstance()->write_operate_log( $action = 'update_daily_data', $content = $code );
+
+            $Redis->setUpdateDaily( date("Ymd"), (int)$code );
 
         }
 

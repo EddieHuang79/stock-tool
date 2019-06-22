@@ -21,17 +21,22 @@ class CountSellBuyPercent
     public function auto_count_SellBuyPercent()
     {
 
-        Record_logic::getInstance()->write_operate_log( $action = 'auto_count_SellBuyPercent', $content = 'in process' );
-
         //  工作日期
 
-        $last_working_date = Holiday_logic::getInstance()->get_work_date( 1, date("Y-m-d"), $type = 1 );
+        $last_working_date = date("Y-m-d", strtotime("-0 days"));
 
         // 取得已存在的資料 帶入目標工作日
 
         $data = SellBuyPercent_logic::getInstance()->get_last_stock_code( $last_working_date );
 
         $last_code = !empty($data->code) ? $data->code : 0 ;
+
+        $content = (int)$last_code < 9820 ? 'in process' : 'no data';
+
+        Record_logic::getInstance()->write_operate_log( $action = 'auto_count_SellBuyPercent', $content );
+
+        if ( (int)$last_code >= 9820 )
+            return true;
 
         // 取得所有股票
 
@@ -43,7 +48,7 @@ class CountSellBuyPercent
 
         $Stock->get_all_stock_info()->filter(function ($item) use($last_code, $not_read) {
             return $item->code > $last_code && !in_array( $item->code, $not_read ) ;
-        })->forPage(0, 10)->map(function ($item) {
+        })->forPage(0, 30)->map(function ($item) {
 
             SellBuyPercent_logic::getInstance()->count_data_logic( $item->code );
 

@@ -31,11 +31,11 @@ class TechnicalAnalysis
 
 	}
 
-	public function get_data( $code, $data_date = [] )
+	public function get_data( $stock_id, $start, $end )
 	{
 
 		$result = DB::table( $this->table )
-					->where( $this->table . '.code', $code );
+					->where( $this->table . '.stock_id', $stock_id );
 
 		$result = !empty($data_date) ? $result->wherein( $this->table . ".data_date", $data_date ) : $result ;
 
@@ -144,7 +144,7 @@ class TechnicalAnalysis
 		}
 
 
-		$result = $result->groupby( 'code' )->orderby( $this->table . '.code' )->limit(8)->get();
+		$result = $result->groupby( 'code' )->orderby( $this->table . '.code' )->limit(30)->get();
 
 		return $result;
 
@@ -171,6 +171,22 @@ class TechnicalAnalysis
         $result = $result->orderby( $this->table . '.code' )
                     ->orderby( $this->table . '.data_date' )
                     ->get();
+
+        return $result;
+
+    }
+
+    public function get_today_percentB( $stock_id, $date )
+    {
+
+        $result = DB::table($this->table)
+            ->select(
+                'code',
+                'percentB'
+            )
+            ->whereIn("stock_id", $stock_id)
+            ->where("data_date", $date)
+            ->get();
 
         return $result;
 

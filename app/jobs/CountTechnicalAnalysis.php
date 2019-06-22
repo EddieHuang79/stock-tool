@@ -29,9 +29,16 @@ class CountTechnicalAnalysis
 
             $Tech = TechnicalAnalysis_logic::getInstance();
 
+            //  2.67 sec
+
             $stock_data = $Tech->get_stock_tech_update_date( $type )->pluck( "code" )->toArray();
 
-            Record_logic::getInstance()->write_operate_log( $action = 'auto_count_technical_analysis_' . $type, $content = 'in process' );
+            $content = !empty($stock_data) ? 'in process' : 'no data';
+
+            Record_logic::getInstance()->write_operate_log( $action = 'auto_count_technical_analysis_' . $type, $content );
+
+            if (empty($stock_data))
+                return true;
 
             foreach ( $stock_data as $code )
             {
@@ -42,7 +49,7 @@ class CountTechnicalAnalysis
 
                 // 日期與id的對應
 
-                $Tech_data = $Tech->get_data( $code );
+                $Tech_data = $Tech->get_data( $stock_id );
 
                 $id_date_mapping = $Tech_data->mapWithKeys( function( $item ) {
                     return [ $item->data_date => $item->id ];

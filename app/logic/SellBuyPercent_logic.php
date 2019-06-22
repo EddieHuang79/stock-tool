@@ -443,7 +443,7 @@ class SellBuyPercent_logic
 
 		$this->code = $code;
 
-		//      取得數據
+        //      取得數據
 
         $this->get_statistics();
 
@@ -500,6 +500,13 @@ class SellBuyPercent_logic
     {
 
         return SellBuyPercent::getInstance()->get_data_by_range( $start, $end );
+
+    }
+
+    public function get_today_result( $stock_id = [], $date )
+    {
+
+        return SellBuyPercent::getInstance()->get_today_result( $stock_id, $date );
 
     }
 

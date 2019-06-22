@@ -107,6 +107,22 @@ class SellBuyPercent
 
     }
 
+    public function get_today_result( $stock_id, $date )
+    {
+
+        $result = DB::table($this->table)
+            ->select(
+                'code',
+                'result'
+            )
+            ->whereIn("stock_id", $stock_id)
+            ->where("data_date", $date)
+            ->get();
+
+        return $result;
+
+    }
+
     public static function getInstance()
     {
 

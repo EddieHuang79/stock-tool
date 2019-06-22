@@ -11,9 +11,12 @@ use App\jobs\AccessCSV;
 use App\jobs\SaveFromCSV;
 use App\jobs\CountSellBuyPercent;
 use App\jobs\SyncFromStockData;
-use App\jobs\BollingerBandsStrategySimulation;
+use App\jobs\BollingerBandsStrategySimulation9;
 use App\jobs\BollingerBandsStrategyBuyingJobs;
 use App\jobs\BollingerBandsStrategySellingJobs;
+use App\jobs\BollingerBandsStrategyGetAssignStock;
+use App\logic\Holiday_logic;
+use App\query\updateNoDataStock;
 
 
 class Kernel extends ConsoleKernel
@@ -36,8 +39,9 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule)
     {
 
-        if ( env("APP_DEBUG") === false && env("APP_ENV") === 'local' )
-        {
+        if ( env("APP_DEBUG") !== false || env("APP_ENV") !== 'local' ) {
+            return;
+        }
 
             // 自動取得資料
 
@@ -81,7 +85,7 @@ class Kernel extends ConsoleKernel
 
             // 轉存基本股價資料
 
-            $schedule->call(function () {
+//            $schedule->call(function () {
 
                 // SaveFromCSV::getInstance()->auto_save_file_to_db( 1 );
 
@@ -101,10 +105,47 @@ class Kernel extends ConsoleKernel
 
                 // SaveFromCSV::getInstance()->auto_save_file_to_db( 9 );
 
-                SaveFromCSV::getInstance()->auto_save_this_month_file_to_db();
+//            })
+//            ->cron("0,5 18 * * *");
 
-            })
-            ->cron("5 */1 * * *");
+        //            // 策略計算
+//
+//            $schedule->call(function () {
+//
+//                BollingerBandsStrategySimulation9::getInstance()->do();
+//                sleep(5);
+//                BollingerBandsStrategySimulation9::getInstance()->do();
+//                sleep(5);
+//                BollingerBandsStrategySimulation9::getInstance()->do();
+//                sleep(5);
+//                BollingerBandsStrategySimulation9::getInstance()->do();
+//                sleep(5);
+//                BollingerBandsStrategySimulation9::getInstance()->do();
+//                sleep(5);
+//                BollingerBandsStrategySimulation9::getInstance()->do();
+//                sleep(5);
+//                BollingerBandsStrategySimulation9::getInstance()->do();
+//                sleep(5);
+//                BollingerBandsStrategySimulation9::getInstance()->do();
+//                sleep(5);
+//                BollingerBandsStrategySimulation9::getInstance()->do();
+//                sleep(5);
+//                BollingerBandsStrategySimulation9::getInstance()->do();
+//                sleep(5);
+//                BollingerBandsStrategySimulation9::getInstance()->do();
+//                sleep(5);
+//                BollingerBandsStrategySimulation9::getInstance()->do();
+//
+//            })->cron("* 12,13,14,15 * * *");
+
+
+            //  取得假日設定
+
+            $is_holiday = Holiday_logic::getInstance()->is_holiday( time() );
+
+            if ( $is_holiday === true ) {
+                return;
+            }
 
             // 自動更新所有股票的當日資料
 
@@ -128,16 +169,25 @@ class Kernel extends ConsoleKernel
 
                 AccessCSV::getInstance()->update_daily_data( 9 );
 
-            })
-            ->cron("* 14,15,16,17,18,19 * * *");
+                AccessCSV::getInstance()->update_daily_data( 10 );
 
-            // 自動計算買賣壓力
+                AccessCSV::getInstance()->update_daily_data( 11 );
+
+                AccessCSV::getInstance()->update_daily_data( 12 );
+
+            })->cron("* 14,15,16 * * *");
+
+            // 轉存基本股價資料
 
             $schedule->call(function () {
 
-                CountSellBuyPercent::getInstance()->auto_count_SellBuyPercent();
+                SaveFromCSV::getInstance()->auto_save_this_month_file_to_db();
 
-            })->cron("* 20-21 * * *");
+                sleep(3);
+
+                updateNoDataStock::getInstance()->update();
+
+            })->cron("45 16 * * *");
 
             // 自動建立技術指標初始資料
 
@@ -145,8 +195,7 @@ class Kernel extends ConsoleKernel
 
                 SyncFromStockData::getInstance()->create_init_data();
 
-
-            })->cron("* 20-21 * * *");
+            })->cron("50,55 16 * * *");
 
             //  KD
 
@@ -154,7 +203,7 @@ class Kernel extends ConsoleKernel
 
                 CountTechnicalAnalysis::getInstance()->auto_count_technical_analysis( 1 );
 
-            })->cron("* 22-23 * * *");
+            })->cron("* 17 * * *");
 
             //  RSI
 
@@ -162,7 +211,7 @@ class Kernel extends ConsoleKernel
 
                 CountTechnicalAnalysis::getInstance()->auto_count_technical_analysis( 2 );
 
-            })->cron("* 0,1 * * *");
+            })->cron("* 18 * * *");
 
             //  MACD
 
@@ -170,33 +219,41 @@ class Kernel extends ConsoleKernel
 
                 CountTechnicalAnalysis::getInstance()->auto_count_technical_analysis( 3 );
 
-            })->cron("* 2,3 * * *");
+            })->cron("* 19 * * *");
 
-            //  布林
+           //  布林
 
-            $schedule->call(function () {
+           $schedule->call(function () {
 
-                CountTechnicalAnalysis::getInstance()->auto_count_technical_analysis( 4 );
+               CountTechnicalAnalysis::getInstance()->auto_count_technical_analysis( 4 );
 
-            })->cron("* 3,4 * * *");
+           })->cron("* 20 * * *");
 
 
-            // 透過Line自動回報選股條件
+           // 自動計算買賣壓力
 
-            $schedule->call(function () {
+           $schedule->call(function () {
 
-//                KDStrategyJobs::getInstance()->daily_info( 1 );
-                BollingerBandsStrategyBuyingJobs::getInstance()->count();
+               CountSellBuyPercent::getInstance()->auto_count_SellBuyPercent();
 
-            })
-            ->cron("0 8 * * *");
+           })->cron("* 21 * * *");
 
-            $schedule->call(function () {
+           // 透過Line自動回報選股條件
 
-                BollingerBandsStrategySellingJobs::getInstance()->count();
+           $schedule->call(function () {
 
-            })
-                ->cron("10 8 * * *");
+               BollingerBandsStrategyBuyingJobs::getInstance()->count();
+
+           })->cron("0 22 * * *");
+
+           $schedule->call(function () {
+
+//                   BollingerBandsStrategySellingJobs::getInstance()->count();
+               BollingerBandsStrategyGetAssignStock::getInstance()->count();
+
+
+           })->cron("10 22 * * *");
+
 
             // 自動建立空白檔案
 
@@ -205,19 +262,7 @@ class Kernel extends ConsoleKernel
                 CreateInitFile::getInstance()->create_init_file();
 
 
-            })
-            ->cron("* * 1 * *");
-
-
-            // 策略計算
-
-            $schedule->call(function () {
-
-//                BollingerBandsStrategySimulation::getInstance()->count();
-
-            })->cron("* * * * *");
-
-        }
+            })->cron("* * 1 * *");
 
     }
 
