@@ -36,9 +36,7 @@ class BollingerBandsStrategyGetAssignStock
     public function __construct()
     {
 
-        $this->code = [2382, 4968, 5522, 2885];
-
-        $this->date = date("Y-m-d", strtotime("-0 days"));
+        $this->code = [2382, 3317, 8086, 3479, 6153, 6176, 6147, 2823, 4164, 1784, 2425, 2823, 3317];
 
         $this->get_stock_id();
 
@@ -85,6 +83,7 @@ class BollingerBandsStrategyGetAssignStock
             $percentB = isset($this->percentB[$code]) ? $this->percentB[$code] : 0;
             $sellBuyPercent = isset($this->sellBuyPercent[$code]) ? $this->sellBuyPercent[$code] : 0;
             $result = $percentB < $this->percentBLowerBound && $sellBuyPercent > $this->sellBuyPercentUpperBound ? '已達出貨標準！' : '持續觀望！' ;
+            $this->notice_msg[$this->page] = isset($this->notice_msg[$this->page]) ? $this->notice_msg[$this->page] : '';
             $this->notice_msg[$this->page] .= $this->notice_format( $msg = '-----' );
             $this->notice_msg[$this->page] .= $this->notice_format( $msg = '股票代號:' . $code );
             $this->notice_msg[$this->page] .= $this->notice_format( $msg = 'BB%:' . $percentB );
@@ -105,8 +104,10 @@ class BollingerBandsStrategyGetAssignStock
 
     }
 
-    public function count()
+    public function count( $date = '' )
     {
+
+        $this->date = $date;
 
         // 取得當日percentB
 
@@ -119,8 +120,6 @@ class BollingerBandsStrategyGetAssignStock
         // 格式化
 
         $this->format();
-
-        dd($this->notice_msg);
 
         // 傳遞資料
 

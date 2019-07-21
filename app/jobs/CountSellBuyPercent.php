@@ -18,12 +18,12 @@ class CountSellBuyPercent
 
     */
 
-    public function auto_count_SellBuyPercent()
+    public function auto_count_SellBuyPercent( $date = '' )
     {
 
         //  工作日期
 
-        $last_working_date = date("Y-m-d", strtotime("-0 days"));
+        $last_working_date = $date;
 
         // 取得已存在的資料 帶入目標工作日
 

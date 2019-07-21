@@ -19,7 +19,7 @@ class AccessCSV
     private function get_TWSE_listed_url( $date, $code )
     {
 
-        return 'http://www.twse.com.tw/exchangeReport/STOCK_DAY?response=csv&date=' . $date . '&stockNo=' . $code;
+        return 'https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=csv&date=' . $date . '&stockNo=' . $code;
 
     }
 
@@ -255,12 +255,74 @@ class AccessCSV
             Record_logic::getInstance()->write_operate_log( $action = 'update_daily_data', $content = $code );
 
             $Redis->setUpdateDaily( date("Ymd"), (int)$code );
+            $Redis->setUpdateFailProcessDaily( date("Ymd"), (int)$code );
 
         }
 
         return true;
 
     }
+
+
+    public function update_fail_daily_data( $date )
+    {
+
+        $date = date("Ymd", strtotime($date));
+
+        //  刪除清單
+
+        $Redis = Redis_tool::getInstance();
+
+        // 待更新的股票資料
+
+        $fail = $Redis->getUpdateFailProcessDaily( $date ) ;
+
+        $limit = count($fail) > 10 ? 10 : count($fail) ;
+
+        $wait_to_update_stock = array_slice($fail, 0, $limit);
+
+        $pending = array_slice($fail, $limit, count($fail) - $limit);
+
+        //  更新陣列
+
+        $Redis->delUpdateFailProcessDaily();
+
+        foreach ($pending as $code) 
+        {
+
+            $Redis->setUpdateFailProcessDaily( $date, (int)$code );
+
+        }
+
+        // 取得股票類型
+
+        $code_type_mapping = Stock_logic::getInstance()->get_stock_type();
+
+        foreach ($wait_to_update_stock as $code)
+        {
+
+            $date = date("Ym01", strtotime($date));
+
+            $type = isset($code_type_mapping[$code]) ? $code_type_mapping[$code] : 1 ;
+
+            $url = $type === 1 ? $this->get_TWSE_listed_url( $date, $code ) : $this->get_TPEx_listed_url( $date, $code ) ;
+
+            $data = Curl::to( $url )->get();
+
+            $this->saveStockFile( $data, $date, $code, $type );
+
+            Record_logic::getInstance()->write_operate_log( $action = 'update_fail_daily_data', $content = $code );
+
+            $Redis->setUpdateDaily( date("Ymd"), (int)$code );
+
+            sleep(5);
+
+        }
+
+        return true;
+
+    }
+
 
 
     // 		Cron Job 自動取得所有股票資料

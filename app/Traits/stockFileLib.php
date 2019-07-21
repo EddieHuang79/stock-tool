@@ -155,13 +155,6 @@ trait stockFileLib
 
 			}
 
-			if ( $ori_content === $new_content )
-			{
-
-                Redis_tool::getInstance()->setFilterStock( (int)$code );
-
-			}
-
 		}
 
 		return $result;

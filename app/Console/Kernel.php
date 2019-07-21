@@ -4,20 +4,8 @@ namespace App\Console;
 
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
-use App\jobs\CreateInitFile;
-use App\jobs\KDStrategyJobs;
-use App\jobs\CountTechnicalAnalysis;
-use App\jobs\AccessCSV;
-use App\jobs\SaveFromCSV;
-use App\jobs\CountSellBuyPercent;
-use App\jobs\SyncFromStockData;
-use App\jobs\BollingerBandsStrategySimulation9;
-use App\jobs\BollingerBandsStrategyBuyingJobs;
-use App\jobs\BollingerBandsStrategySellingJobs;
-use App\jobs\BollingerBandsStrategyGetAssignStock;
 use App\logic\Holiday_logic;
-use App\query\updateNoDataStock;
-
+use App\jobs\CrontabCenter;
 
 class Kernel extends ConsoleKernel
 {
@@ -43,226 +31,137 @@ class Kernel extends ConsoleKernel
             return;
         }
 
-            // 自動取得資料
-
-            // $schedule->call(function () {
-
-            //     // 從股票代號0開始
-
-            //     AccessCSV::getInstance()->auto_get_data( 1 );
-
-            //     // 從股票代號4000開始
-
-            //     AccessCSV::getInstance()->auto_get_data( 2 );
-
-            //     // 從股票代號5000開始
-
-            //     AccessCSV::getInstance()->auto_get_data( 3 );
-
-            //     // 從股票代號6000開始
-
-            //     AccessCSV::getInstance()->auto_get_data( 4 );
-
-            //     // 從股票代號7000開始(只有1筆)
-            //     // 從股票代號6600開始
-
-            //     AccessCSV::getInstance()->auto_get_data( 5 );
-
-            //     // 從股票代號8000開始
-
-            //     AccessCSV::getInstance()->auto_get_data( 6 );
-
-            //     // 從股票代號9000開始
-            //     // 從股票代號8500開始
-            //     // 從股票代號4700 - 5000
-
-            //     AccessCSV::getInstance()->auto_get_data( 7 );
-
-            // })
-            // ->cron("* * * * *");
-
-
-
-            // 轉存基本股價資料
-
-//            $schedule->call(function () {
-
-                // SaveFromCSV::getInstance()->auto_save_file_to_db( 1 );
-
-                // SaveFromCSV::getInstance()->auto_save_file_to_db( 2 );
-
-                // SaveFromCSV::getInstance()->auto_save_file_to_db( 3 );
-
-                // SaveFromCSV::getInstance()->auto_save_file_to_db( 4 );
-
-                // SaveFromCSV::getInstance()->auto_save_file_to_db( 5 );
-
-                // SaveFromCSV::getInstance()->auto_save_file_to_db( 6 );
-
-                // SaveFromCSV::getInstance()->auto_save_file_to_db( 7 );
-
-                // SaveFromCSV::getInstance()->auto_save_file_to_db( 8 );
-
-                // SaveFromCSV::getInstance()->auto_save_file_to_db( 9 );
-
-//            })
-//            ->cron("0,5 18 * * *");
-
-        //            // 策略計算
+//        // 策略模擬
 //
-//            $schedule->call(function () {
+//        $schedule->call(function () {
 //
-//                BollingerBandsStrategySimulation9::getInstance()->do();
-//                sleep(5);
-//                BollingerBandsStrategySimulation9::getInstance()->do();
-//                sleep(5);
-//                BollingerBandsStrategySimulation9::getInstance()->do();
-//                sleep(5);
-//                BollingerBandsStrategySimulation9::getInstance()->do();
-//                sleep(5);
-//                BollingerBandsStrategySimulation9::getInstance()->do();
-//                sleep(5);
-//                BollingerBandsStrategySimulation9::getInstance()->do();
-//                sleep(5);
-//                BollingerBandsStrategySimulation9::getInstance()->do();
-//                sleep(5);
-//                BollingerBandsStrategySimulation9::getInstance()->do();
-//                sleep(5);
-//                BollingerBandsStrategySimulation9::getInstance()->do();
-//                sleep(5);
-//                BollingerBandsStrategySimulation9::getInstance()->do();
-//                sleep(5);
-//                BollingerBandsStrategySimulation9::getInstance()->do();
-//                sleep(5);
-//                BollingerBandsStrategySimulation9::getInstance()->do();
+//            CrontabCenter::getInstance()->simulation();
 //
-//            })->cron("* 12,13,14,15 * * *");
+//        })->cron("* 10,11,12,13,14,15,16 * * *");
 
+        //  取得假日設定
 
-            //  取得假日設定
+       $is_holiday = Holiday_logic::getInstance()->is_holiday( time() );
 
-            $is_holiday = Holiday_logic::getInstance()->is_holiday( time() );
+       if ( $is_holiday === true ) {
+           return;
+       }
 
-            if ( $is_holiday === true ) {
-                return;
-            }
+        // 自動更新所有股票的當日資料
 
-            // 自動更新所有股票的當日資料
+        $schedule->call(function () {
 
-            $schedule->call(function () {
+            CrontabCenter::getInstance()->update_daily_data();
 
-                AccessCSV::getInstance()->update_daily_data( 1 );
+        })->cron("* 14,15,16 * * *");
 
-                AccessCSV::getInstance()->update_daily_data( 2 );
+        // 股票更新失敗通知
 
-                AccessCSV::getInstance()->update_daily_data( 3 );
+        $schedule->call(function () {
 
-                AccessCSV::getInstance()->update_daily_data( 4 );
+            CrontabCenter::getInstance()->update_fail_notice();
 
-                AccessCSV::getInstance()->update_daily_data( 5 );
+        })->cron("40 16 * * *");
 
-                AccessCSV::getInstance()->update_daily_data( 6 );
+        //  更新失敗的檔案重新抓
 
-                AccessCSV::getInstance()->update_daily_data( 7 );
+        $schedule->call(function () {
 
-                AccessCSV::getInstance()->update_daily_data( 8 );
+            CrontabCenter::getInstance()->update_fail_daily_data();
 
-                AccessCSV::getInstance()->update_daily_data( 9 );
+        })->cron("45-59 16 * * *");
 
-                AccessCSV::getInstance()->update_daily_data( 10 );
+        $schedule->call(function () {
 
-                AccessCSV::getInstance()->update_daily_data( 11 );
+            CrontabCenter::getInstance()->update_fail_daily_data();
 
-                AccessCSV::getInstance()->update_daily_data( 12 );
+        })->cron("0-40 17 * * *");
 
-            })->cron("* 14,15,16 * * *");
+        // 轉存基本股價資料
 
-            // 轉存基本股價資料
+        $schedule->call(function () {
 
-            $schedule->call(function () {
+            CrontabCenter::getInstance()->auto_save_this_month_file_to_db();
 
-                SaveFromCSV::getInstance()->auto_save_this_month_file_to_db();
+        })->cron("45 17 * * *");
 
-                sleep(3);
+        // 自動建立技術指標初始資料
 
-                updateNoDataStock::getInstance()->update();
+        $schedule->call(function () {
 
-            })->cron("45 16 * * *");
+            CrontabCenter::getInstance()->create_init_data();
 
-            // 自動建立技術指標初始資料
+        })->cron("50,55 17 * * *");
 
-            $schedule->call(function () {
+        //  KD
 
-                SyncFromStockData::getInstance()->create_init_data();
+        $schedule->call(function () {
 
-            })->cron("50,55 16 * * *");
+            CrontabCenter::getInstance()->count_KD();
 
-            //  KD
+        })->cron("* 18 * * *");
 
-            $schedule->call(function () {
+        //  RSI
 
-                CountTechnicalAnalysis::getInstance()->auto_count_technical_analysis( 1 );
+        $schedule->call(function () {
 
-            })->cron("* 17 * * *");
+            CrontabCenter::getInstance()->count_RSI();
 
-            //  RSI
+        })->cron("* 19 * * *");
 
-            $schedule->call(function () {
+        //  MACD
 
-                CountTechnicalAnalysis::getInstance()->auto_count_technical_analysis( 2 );
+        $schedule->call(function () {
 
-            })->cron("* 18 * * *");
+            CrontabCenter::getInstance()->count_MACD();
 
-            //  MACD
+        })->cron("* 20 * * *");
 
-            $schedule->call(function () {
+       //  布林
 
-                CountTechnicalAnalysis::getInstance()->auto_count_technical_analysis( 3 );
+       $schedule->call(function () {
 
-            })->cron("* 19 * * *");
+           CrontabCenter::getInstance()->count_Bollinger();
 
-           //  布林
+       })->cron("* 21 * * *");
 
-           $schedule->call(function () {
 
-               CountTechnicalAnalysis::getInstance()->auto_count_technical_analysis( 4 );
+       // 自動計算買賣壓力
 
-           })->cron("* 20 * * *");
+       $schedule->call(function () {
 
+           CrontabCenter::getInstance()->count_sellBuyPercent();
 
-           // 自動計算買賣壓力
+       })->cron("* 22 * * *");
 
-           $schedule->call(function () {
+        $schedule->call(function () {
 
-               CountSellBuyPercent::getInstance()->auto_count_SellBuyPercent();
+            CrontabCenter::getInstance()->count_sellBuyPercent();
 
-           })->cron("* 21 * * *");
+        })->cron("0-15 23 * * *");
 
-           // 透過Line自動回報選股條件
 
-           $schedule->call(function () {
+       // 透過Line自動回報選股條件
 
-               BollingerBandsStrategyBuyingJobs::getInstance()->count();
+       $schedule->call(function () {
 
-           })->cron("0 22 * * *");
+           CrontabCenter::getInstance()->BollingerBuy();
 
-           $schedule->call(function () {
+       })->cron("15 23 * * *");
 
-//                   BollingerBandsStrategySellingJobs::getInstance()->count();
-               BollingerBandsStrategyGetAssignStock::getInstance()->count();
+       $schedule->call(function () {
 
+            CrontabCenter::getInstance()->BollingerSell();
 
-           })->cron("10 22 * * *");
+       })->cron("20 23 * * *");
 
+        // 自動建立空白檔案
 
-            // 自動建立空白檔案
+        $schedule->call(function () {
 
-            $schedule->call(function () {
+            CrontabCenter::getInstance()->create_empty_file();
 
-                CreateInitFile::getInstance()->create_init_file();
-
-
-            })->cron("* * 1 * *");
+        })->cron("* * 1 * *");
 
     }
 

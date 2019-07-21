@@ -193,168 +193,12 @@ class Stock_logic
 	}
 
 
-	// 		從檔案取得所有已更新到本月的股票的最新更新日期
-
-//	public function get_all_stock_update_date( $type = 1 )
-//	{
-//
-//		$stop_trade = $this->stop_trade;
-//
-//		$filter_list = Redis_tool::getInstance()->getFilterStock();
-//
-//		// 取得指定股票區間的當月的檔案
-//
-//		switch ( $type )
-//		{
-//
-//			case 1:
-//
-//				$sec = 0;
-//
-//				$dir_name = 'st1000';
-//
-//				break;
-//
-//			case 2:
-//
-//				$sec = 5;
-//
-//				$dir_name = 'st2000';
-//
-//				break;
-//
-//			case 3:
-//
-//				$sec = 10;
-//
-//				$dir_name = 'st3000';
-//
-//				break;
-//
-//
-//			case 4:
-//
-//				$sec = 15;
-//
-//				$dir_name = 'st4000';
-//
-//				break;
-//
-//
-//			case 5:
-//
-//				$sec = 20;
-//
-//				$dir_name = 'st5000';
-//
-//				break;
-//
-//			case 6:
-//
-//				$sec = 25;
-//
-//				$dir_name = 'st6000';
-//
-//				break;
-//
-//			case 7:
-//
-//				$sec = 30;
-//
-//                $dir_name = 'st7000';
-//
-//				break;
-//
-//			case 8:
-//
-//				$sec = 35;
-//
-//				$dir_name = 'st8000';
-//
-//				break;
-//
-//			case 9:
-//
-//				$sec = 40;
-//
-//				$dir_name = 'st9000';
-//
-//				break;
-//
-//            case 10:
-//
-//                $sec = 45;
-//
-//                $dir_name = 'st2000';
-//
-//                break;
-//
-//            case 11:
-//
-//                $sec = 50;
-//
-//                $dir_name = 'st6000';
-//
-//                break;
-//
-//            case 12:
-//
-//                $sec = 55;
-//
-//                $dir_name = 'st3000';
-//
-//                break;
-//
-//		}
-//
-//		sleep($sec);
-//
-//		$week = (int)date("w");
-//
-//		$dateTime = time();
-//
-//		$dateTime = $week === 0 ? $dateTime - (86400 * 2) : $dateTime ;
-//
-//		$dateTime = $week === 6 ? $dateTime - (86400 * 1) : $dateTime ;
-//
-//		$dateTime = (int)date("H", $dateTime) < 14 ? $dateTime - (86400 * 1) : $dateTime ;
-//
-//		$dateTime = (int)date("H", $dateTime) < 14 && $week === 1 ? $dateTime - (86400 * 2) : $dateTime ;
-//
-//		// 取得所有檔案
-//
-//		$files = $this->get_dir_files( $dir_name );
-//
-//		// 產生待更新清單
-//
-//		$result = collect( $files )->filter(function( $value ) {
-//			return strpos( $value, date("Ym") ) !== false;
-//		})->mapWithKeys( function( $fileName ) {
-//			$tmp = explode("/", $fileName);
-//			$code = isset($tmp[2]) ? intval($tmp[2]) : '' ;
-//			$data = $this->stock_data_to_array( $fileName );
-//			$last = end($data);
-//			$last_date = isset($last["date"]) ? $last["date"] : '' ;
-//			return [ $code => $last_date ];
-//		})->filter(function( $date, $code ) use($dateTime, $stop_trade, $filter_list) {
-//			return $date !== date("Y-m-d", $dateTime) && !in_array($code, $stop_trade) && !in_array($code, $filter_list) ;
-//		})->slice(0, 2)->toArray();
-//
-//		asort($result);
-//
-//		return $result;
-//
-//	}
-
-
 	//      從檔案取得所有已更新到本月的股票的最新更新日期 >> 新版
 
     public function get_all_stock_update_date_new( $type = 1 )
     {
 
         $stop_trade = $this->stop_trade;
-
-        $filter_list = Redis_tool::getInstance()->getFilterStock();
 
         // 取得指定股票區間的當月的檔案
 
@@ -489,8 +333,7 @@ class Stock_logic
             "sec"           => $sec,
             "start"         => $start,
             "end"           => $end,
-            "stop_trade"    => $stop_trade,
-            "filter_list"   => $filter_list
+            "stop_trade"    => $stop_trade
         ];
 
         return $result;

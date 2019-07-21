@@ -26,6 +26,8 @@ class SaveFromCSV
 
     private $parents_dir = 'stock';
 
+    private $date;
+
     //  取出檔名，比對股票代號，已存在資料庫的資料排除掉之後，依據股票代號分類回傳資料
 
     private function process()
@@ -137,12 +139,12 @@ class SaveFromCSV
         $this->data = $this->stock_info->keys()->filter(function ($code) {
             $sub = floor($code / 1000) * 1000;
             $sub = $sub > 9999 ? 9000 : $sub ;
-            $file_path = $this->parents_dir . '/st' . $sub . '/' . $code . '/' . date("Ym01") . '.csv';
+            $file_path = $this->parents_dir . '/st' . $sub . '/' . $code . '/' . date("Ym01", strtotime($this->date)) . '.csv';
             return file_exists(  storage_path( 'app/' . $file_path ) ) === true;
         })->mapWithKeys(function( $code ){
             $sub = floor($code / 1000) * 1000;
             $sub = $sub > 9999 ? 9000 : $sub ;
-            $file_path = $this->parents_dir . '/st' . $sub . '/' . $code . '/' . date("Ym01") . '.csv';
+            $file_path = $this->parents_dir . '/st' . $sub . '/' . $code . '/' . date("Ym01", strtotime($this->date)) . '.csv';
             return [ $code => $file_path ];
         })->filter( function ( $fileName ) {
             return Storage::size( $fileName ) > 0;
@@ -186,8 +188,10 @@ class SaveFromCSV
 
     // 		轉存當月基本股價資料
 
-    public function auto_save_this_month_file_to_db()
+    public function auto_save_this_month_file_to_db( $date )
     {
+
+        $this->date = $date;
 
         Record_logic::getInstance()->write_operate_log( $action = 'auto_save_this_month_file_to_db', $content = 'in process' );
 

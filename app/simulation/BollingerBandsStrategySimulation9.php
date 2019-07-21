@@ -1,9 +1,8 @@
 <?php
 
-namespace App\jobs;
+namespace App\simulation;
 
 use App\abstracts\BollingerBandsStrategy;
-
 
 /*
  買進條件:
@@ -14,12 +13,11 @@ use App\abstracts\BollingerBandsStrategy;
  賣出條件:
     1.  percentB < 0.8
     2.  獲利 虧損時設定不同條件
-        獲利時 sellBuyPercent放寬到0.8，虧損時 維持在0.7
+        獲利時 sellBuyPercent放寬到0.9，虧損時 維持在0.7
 */
 
-class BollingerBandsStrategySimulation8 extends BollingerBandsStrategy
+class BollingerBandsStrategySimulation9 extends BollingerBandsStrategy
 {
-
 
     // 交易策略
 
@@ -53,7 +51,7 @@ class BollingerBandsStrategySimulation8 extends BollingerBandsStrategy
             {
 
                 // 獲利 虧損時設定不同條件
-                // 獲利時 sellBuyPercent放寬到0.8，虧損時 維持在0.7
+                // 獲利時 sellBuyPercent放寬到0.9，虧損時 維持在0.7
 
                 $last_buy_data = end($this->buy_date);
 
@@ -64,7 +62,7 @@ class BollingerBandsStrategySimulation8 extends BollingerBandsStrategy
                 if ( !empty($buy_price) && !empty($sell_price) )
                 {
 
-                    $limit = $sell_price > $buy_price ? 0.8 : 0.7;
+                    $limit = $sell_price > $buy_price ? 0.9 : 0.7;
 
                     if ( $sellBuyPercent > $limit )
                     {
@@ -86,9 +84,9 @@ class BollingerBandsStrategySimulation8 extends BollingerBandsStrategy
     public function do()
     {
 
-        $this->set_file_name( "Strategy/BollingerBandsStrategySimulation8.txt" );
+        $this->set_file_name( "Strategy/BollingerBandsStrategySimulation9.txt" );
 
-        $this->set_log_title( "BollingerBandsStrategySimulation8" );
+        $this->set_log_title( "BollingerBandsStrategySimulation9" );
 
         $this->count();
 

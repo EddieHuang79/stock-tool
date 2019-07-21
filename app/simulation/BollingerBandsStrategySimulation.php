@@ -1,22 +1,20 @@
 <?php
 
-namespace App\jobs;
+namespace App\simulation;
 
 use App\abstracts\BollingerBandsStrategy;
-
 
 /*
  買進條件:
     1.  均價 > 20
     2.  percentB >= 0.8
     3.  sellBuyPercent < 0.8
-    4.  bandwidth <= 0.05
  賣出條件:
     1.  percentB < 0.8
-    2.  sellBuyPercent > 0.8
+    2.  sellBuyPercent > 0.9
 */
 
-class BollingerBandsStrategySimulation5 extends BollingerBandsStrategy
+class BollingerBandsStrategySimulation extends BollingerBandsStrategy
 {
 
     // 交易策略
@@ -31,7 +29,7 @@ class BollingerBandsStrategySimulation5 extends BollingerBandsStrategy
 
             $sellBuyPercent = isset($this->sellBuyPercent[$row["data_date"]]) ? $this->sellBuyPercent[$row["data_date"]] : 0 ;
 
-            if ( $row["percentB"] >= 0.8 && !empty($sellBuyPercent) && $sellBuyPercent <= 0.8 && $has_stock === false && $row["bandwidth"] <= 0.05 )
+            if ( $row["percentB"] >= 0.8 && !empty($sellBuyPercent) && $sellBuyPercent <= 0.8 && $has_stock === false )
             {
 
                 $has_stock = true;
@@ -40,7 +38,7 @@ class BollingerBandsStrategySimulation5 extends BollingerBandsStrategy
 
             }
 
-            if ( $has_stock === true && $row["percentB"] < 0.8 && $sellBuyPercent > 0.8 )
+            if ( $has_stock === true && $row["percentB"] < 0.8 && $sellBuyPercent > 0.9 )
             {
 
                 $has_stock = false;
@@ -50,21 +48,21 @@ class BollingerBandsStrategySimulation5 extends BollingerBandsStrategy
             }
 
         }
-
     }
 
     public function do()
     {
 
-        $this->set_file_name( "Strategy/BollingerBandsStrategySimulation5.txt" );
+        $this->set_file_name( "Strategy/BollingerBandsStrategySimulation1.txt" );
 
-        $this->set_log_title( "BollingerBandsStrategySimulation5" );
+        $this->set_log_title( "BollingerBandsStrategySimulation1" );
 
         $this->count();
 
         return true;
 
     }
+
 
     public static function getInstance()
     {

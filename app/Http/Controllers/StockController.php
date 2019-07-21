@@ -27,9 +27,16 @@ use App\query\deleteNotUpdateCodeFromRedis;
 use App\query\updateNoDataStock;
 use App\query\countAssignSellBuyPercent;
 use Ixudra\Curl\Facades\Curl;
+use App\Traits\SchemaFunc;
+use App\Traits\stockFileLib;
+use App\jobs\CrontabCenter;
+use App\jobs\getNotUpdateStock;
 
 class StockController extends Controller
 {
+
+    use SchemaFunc, stockFileLib;
+
     /**
      * Display a listing of the resource.
      *
@@ -149,16 +156,37 @@ class StockController extends Controller
     }
 
 
+    // 		上市網址
+
+    private function get_TWSE_listed_url( $date, $code )
+    {
+
+        return 'https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=csv&date=' . $date . '&stockNo=' . $code;
+
+    }
+
+
+    // 		上櫃網址
+    //		$response = Curl::to( $url )->withResponseHeaders()->returnResponseObject()->get(); 破解
+
+    private function get_TPEx_listed_url( $date, $code )
+    {
+
+        $date = $this->year_change( $date );
+
+        return 'https://www.tpex.org.tw/web/stock/aftertrading/daily_trading_info/st43_download.php?l=zh-tw&d=' . $date . '&stkno=' . $code . '&s=[0,asc,0]';
+
+    }
+
     //  test
 
     public function test_entrance(Request $request)
     {
 
-//        updateNoDataStock::getInstance()->update();
+//        BollingerBandsStrategySimulation11::getInstance()->do();
 
-//        CountTechnicalAnalysis::getInstance()->auto_count_technical_analysis( 1 );
-
-//        countAssignSellBuyPercent::getInstance()->auto_count_SellBuyPercent();
+//        CrontabCenter::getInstance()->BollingerSell();
+//        CrontabCenter::getInstance()->BollingerBuy();
 
         return response( "done" , 200 )->header('Content-Type', 'text/plain');
 

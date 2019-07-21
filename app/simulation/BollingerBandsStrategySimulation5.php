@@ -1,6 +1,6 @@
 <?php
 
-namespace App\jobs;
+namespace App\simulation;
 
 use App\abstracts\BollingerBandsStrategy;
 
@@ -10,13 +10,13 @@ use App\abstracts\BollingerBandsStrategy;
     1.  均價 > 20
     2.  percentB >= 0.8
     3.  sellBuyPercent < 0.8
-    4.  10日平均成交量 > 500
+    4.  bandwidth <= 0.05
  賣出條件:
     1.  percentB < 0.8
-    2.  sellBuyPercent > 0.7
+    2.  sellBuyPercent > 0.8
 */
 
-class BollingerBandsStrategySimulation7 extends BollingerBandsStrategy
+class BollingerBandsStrategySimulation5 extends BollingerBandsStrategy
 {
 
     // 交易策略
@@ -31,23 +31,16 @@ class BollingerBandsStrategySimulation7 extends BollingerBandsStrategy
 
             $sellBuyPercent = isset($this->sellBuyPercent[$row["data_date"]]) ? $this->sellBuyPercent[$row["data_date"]] : 0 ;
 
-            if ( $row["percentB"] >= 0.8 && !empty($sellBuyPercent) && $sellBuyPercent <= 0.8 && $has_stock === false )
+            if ( $row["percentB"] >= 0.8 && !empty($sellBuyPercent) && $sellBuyPercent <= 0.8 && $has_stock === false && $row["bandwidth"] <= 0.05 )
             {
 
-                $this->set_volume( $row["data_date"] );
+                $has_stock = true;
 
-                if ( $this->volume_data > $this->volume_limit )
-                {
-
-                    $has_stock = true;
-
-                    $this->buy_date[] = $row;
-
-                }
+                $this->buy_date[] = $row;
 
             }
 
-            if ( $has_stock === true && $row["percentB"] < 0.8 && $sellBuyPercent > 0.7 )
+            if ( $has_stock === true && $row["percentB"] < 0.8 && $sellBuyPercent > 0.8 )
             {
 
                 $has_stock = false;
@@ -63,9 +56,9 @@ class BollingerBandsStrategySimulation7 extends BollingerBandsStrategy
     public function do()
     {
 
-        $this->set_file_name( "Strategy/BollingerBandsStrategySimulation7.txt" );
+        $this->set_file_name( "Strategy/BollingerBandsStrategySimulation5.txt" );
 
-        $this->set_log_title( "BollingerBandsStrategySimulation7" );
+        $this->set_log_title( "BollingerBandsStrategySimulation5" );
 
         $this->count();
 

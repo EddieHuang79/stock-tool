@@ -1,22 +1,21 @@
 <?php
 
-namespace App\jobs;
+namespace App\simulation;
 
 use App\abstracts\BollingerBandsStrategy;
-
 
 /*
  買進條件:
     1.  均價 > 20
     2.  percentB >= 0.8
     3.  sellBuyPercent < 0.8
-    4.  10日平均成交量 > 500
+    4.  10日平均成交量 > 1000
  賣出條件:
     1.  percentB < 0.8
-    2.  sellBuyPercent > 0.8
+    2.  sellBuyPercent > 0.7
 */
 
-class BollingerBandsStrategySimulation4 extends BollingerBandsStrategy
+class BollingerBandsStrategySimulation10 extends BollingerBandsStrategy
 {
 
     // 交易策略
@@ -47,7 +46,7 @@ class BollingerBandsStrategySimulation4 extends BollingerBandsStrategy
 
             }
 
-            if ( $has_stock === true && $row["percentB"] < 0.8 && $sellBuyPercent > 0.8 )
+            if ( $has_stock === true && $row["percentB"] < 0.8 && $sellBuyPercent > 0.7 )
             {
 
                 $has_stock = false;
@@ -63,9 +62,11 @@ class BollingerBandsStrategySimulation4 extends BollingerBandsStrategy
     public function do()
     {
 
-        $this->set_file_name( "Strategy/BollingerBandsStrategySimulation4.txt" );
+        $this->volume_limit = 1000;
 
-        $this->set_log_title( "BollingerBandsStrategySimulation4" );
+        $this->set_file_name( "Strategy/BollingerBandsStrategySimulation10.txt" );
+
+        $this->set_log_title( "BollingerBandsStrategySimulation10" );
 
         $this->count();
 

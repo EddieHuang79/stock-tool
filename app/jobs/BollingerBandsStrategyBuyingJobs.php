@@ -56,13 +56,6 @@ class BollingerBandsStrategyBuyingJobs
 
     private $now_date;
 
-    public function __construct()
-    {
-
-        $this->now_date = date("Y-m-d", strtotime("-0 days"));
-
-    }
-
     /*
 
         PercentB >= 0.8
@@ -213,8 +206,10 @@ class BollingerBandsStrategyBuyingJobs
 
     }
 
-    public function count()
+    public function count( $date = '' )
     {
+
+        $this->now_date = $date;
 
         Record_logic::getInstance()->write_operate_log( $action = 'BollingerBandsStrategyBuyingJobs', $content = "process" );
 
