@@ -31,19 +31,19 @@ class Kernel extends ConsoleKernel
             return;
         }
 
-//        // 策略模擬
-//
-//        $schedule->call(function () {
-//
-//            CrontabCenter::getInstance()->simulation();
-//
-//        })->cron("* 10,11,12,13,14,15,16 * * *");
+       // 策略模擬
+
+       // $schedule->call(function () {
+
+       //     CrontabCenter::getInstance()->simulation();
+
+       // })->cron("* 17-18,11-14 * * *");
 
         //  取得假日設定
 
        $is_holiday = Holiday_logic::getInstance()->is_holiday( time() );
 
-       if ( $is_holiday === true ) {
+       if ( $is_holiday === true && date("w") !== 6 ) {
            return;
        }
 
@@ -53,7 +53,7 @@ class Kernel extends ConsoleKernel
 
             CrontabCenter::getInstance()->update_daily_data();
 
-        })->cron("* 14,15,16 * * *");
+        })->cron("* 14,15,16 * * 1-5");
 
         // 股票更新失敗通知
 
@@ -61,7 +61,7 @@ class Kernel extends ConsoleKernel
 
             CrontabCenter::getInstance()->update_fail_notice();
 
-        })->cron("40 16 * * *");
+        })->cron("40 16 * * 1-5");
 
         //  更新失敗的檔案重新抓
 
@@ -69,13 +69,13 @@ class Kernel extends ConsoleKernel
 
             CrontabCenter::getInstance()->update_fail_daily_data();
 
-        })->cron("45-59 16 * * *");
+        })->cron("45-59 16 * * 1-5");
 
         $schedule->call(function () {
 
             CrontabCenter::getInstance()->update_fail_daily_data();
 
-        })->cron("0-40 17 * * *");
+        })->cron("0-40 17 * * 1-5");
 
         // 轉存基本股價資料
 
@@ -83,7 +83,7 @@ class Kernel extends ConsoleKernel
 
             CrontabCenter::getInstance()->auto_save_this_month_file_to_db();
 
-        })->cron("45 17 * * *");
+        })->cron("45 17 * * 1-5");
 
         // 自動建立技術指標初始資料
 
@@ -91,54 +91,30 @@ class Kernel extends ConsoleKernel
 
             CrontabCenter::getInstance()->create_init_data();
 
-        })->cron("50,55 17 * * *");
+        })->cron("51-55 17 * * 1-5");
 
-        //  KD
-
-        $schedule->call(function () {
-
-            CrontabCenter::getInstance()->count_KD();
-
-        })->cron("* 18 * * *");
-
-        //  RSI
+        //  計算全部
 
         $schedule->call(function () {
 
-            CrontabCenter::getInstance()->count_RSI();
+            CrontabCenter::getInstance()->count_all();
 
-        })->cron("* 19 * * *");
+        })->cron("* 18-19 * * 1-4");
 
-        //  MACD
-
-        $schedule->call(function () {
-
-            CrontabCenter::getInstance()->count_MACD();
-
-        })->cron("* 20 * * *");
-
-       //  布林
-
-       $schedule->call(function () {
-
-           CrontabCenter::getInstance()->count_Bollinger();
-
-       })->cron("* 21 * * *");
-
-
-       // 自動計算買賣壓力
+       // 自動計算買賣壓力 Redis要記得清 updateDaily_{date}
 
        $schedule->call(function () {
 
            CrontabCenter::getInstance()->count_sellBuyPercent();
 
-       })->cron("* 22 * * *");
+       })->cron("* 20 * * 1-4");
+
 
         $schedule->call(function () {
 
             CrontabCenter::getInstance()->count_sellBuyPercent();
 
-        })->cron("0-15 23 * * *");
+        })->cron("0-24 21 * * 1-4");
 
 
        // 透過Line自動回報選股條件
@@ -147,13 +123,54 @@ class Kernel extends ConsoleKernel
 
            CrontabCenter::getInstance()->BollingerBuy();
 
-       })->cron("15 23 * * *");
+       })->cron("25 21 * * 1-4");
 
        $schedule->call(function () {
 
             CrontabCenter::getInstance()->BollingerSell();
 
-       })->cron("20 23 * * *");
+       })->cron("30 21 * * 1-4");
+
+
+       // 禮拜六執行禮拜五的資料
+
+        //  計算全部
+
+        $schedule->call(function () {
+
+            CrontabCenter::getInstance()->count_all();
+
+        })->cron("* 0-1 * * 6");
+
+        // 自動計算買賣壓力
+
+        $schedule->call(function () {
+
+            CrontabCenter::getInstance(1)->count_sellBuyPercent();
+
+        })->cron("* 2 * * 6");
+
+        $schedule->call(function () {
+
+            CrontabCenter::getInstance(1)->count_sellBuyPercent();
+
+        })->cron("0-15 3 * * 6");
+
+
+        // 透過Line自動回報選股條件
+
+        $schedule->call(function () {
+
+            CrontabCenter::getInstance(1)->BollingerBuy();
+
+        })->cron("20 3 * * 6");
+
+        $schedule->call(function () {
+
+            CrontabCenter::getInstance(1)->BollingerSell();
+
+        })->cron("25 3 * * 6");
+
 
         // 自動建立空白檔案
 

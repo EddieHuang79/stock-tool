@@ -37,7 +37,7 @@ class TechnicalAnalysis
 		$result = DB::table( $this->table )
 					->where( $this->table . '.stock_id', $stock_id );
 
-		$result = !empty($data_date) ? $result->wherein( $this->table . ".data_date", $data_date ) : $result ;
+		$result = !empty($start) && !empty($end) ? $result->whereBetween( $this->table . ".data_date", [$start, $end] ) : $result ;
 
 		$result = $result->orderby( $this->table . '.data_date' )->get();
 
@@ -90,61 +90,16 @@ class TechnicalAnalysis
 
 	// 找出要計算的前10支股票代號
 
-	public function get_stock_tech_update_date( $type )
+	public function get_stock_tech_update_date_v2()
 	{
 
 		$result = DB::table( $this->table )
 					->select(
+						$this->table . '.stock_id',
 						$this->table . '.code'
-					);
-
-		switch ( $type )
-		{
-
-			// rsv + kd
-
-			case 1:
-
-				$result = $result->where( "rsv", 0.00 )->where( "k9", 0.00 )->where( "d9", 0.00 );
-
-				$result = $result->where( "step", 0 );
-
-				break;
-
-			// rsi
-
-			case 2:
-
-				$result = $result->where( "rsi5", 0.00 )->where( "rsi10", 0.00 );
-
-				$result = $result->where( "step", 1 );
-
-				break;
-
-			// MACD
-
-			case 3:
-
-				$result = $result->where( "diff", 0.00 )->where( "macd", 0.00 )->where( "osc", 0.00 );
-
-				$result = $result->where( "step", 2 );
-
-				break;
-
-            // 布林
-
-            case 4:
-
-                $result = $result->where( "MA20", 0.00 )->where( "upperBand", 0.00 )->where( "lowerBand", 0.00 )->where( "PercentB", 0.00 )->where( "bandwidth", 0.00 );
-
-                $result = $result->where( "step", 3 );
-
-                break;
-
-		}
-
-
-		$result = $result->groupby( 'code' )->orderby( $this->table . '.code' )->limit(30)->get();
+					)
+					->where( "step", 0 )
+					->groupby( 'code', 'stock_id' )->orderby( $this->table . '.code' )->limit(20)->get();
 
 		return $result;
 
@@ -157,6 +112,7 @@ class TechnicalAnalysis
             ->select(
                 "code",
                 "data_date",
+                "RSI5",
                 "MA20",
                 "upperBand",
                 "lowerBand",

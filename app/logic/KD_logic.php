@@ -58,13 +58,13 @@ class KD_logic
 
     private $Tech_data = [];
 
-    public function count_data( $stock_id, $id_date_mapping, $Tech, $Tech_data )
-	{
+    public function return_data( $stock_id, $id_date_mapping, $Tech, $Tech_data, $start_count_day, $end_count_day )
+    {
 
-		$result = false;
+        $result = false;
 
-		if ( !empty($stock_id) )
-		{
+        if ( !empty($stock_id) )
+        {
 
             $this->id_date_mapping = $id_date_mapping;
 
@@ -79,7 +79,7 @@ class KD_logic
                 ]];
             })->toArray();
 
-            $this->data = Stock_logic::getInstance()->get_stock_data( $stock_id );
+            $this->data = Stock_logic::getInstance()->get_stock_data( $stock_id, $start_count_day, $end_count_day );
 
             //  找出N天內最高價
 
@@ -103,18 +103,13 @@ class KD_logic
 
             //  格式化
 
-            $this->format();
+            return $this->format_return();
 
-            //  更新
+        }
 
-            $this->update();
+        return $result;
 
-		}
-
-		return $result;
-
-	}
-
+    }
 
     // 	找出N天內最高價
 
@@ -323,6 +318,26 @@ class KD_logic
         }
 
         return true;
+
+    }
+
+    //  回傳資料
+
+    private function format_return()
+    {
+
+        $data = $this->data->map(function ( $item ) {
+            $result = [
+                "RSV"           =>  $item->RSV,
+                "K9"            =>  $item->K9,
+                "D9"            =>  $item->D9,
+            ];
+            return [ "date" => $item->data_date, "data" => $result ];
+        })->filter(function ($item) {
+            return $this->Tech_data[$item["date"]]["step"] === 0;
+        })->values()->toArray();
+
+        return $data ?? [];
 
     }
 

@@ -19,7 +19,6 @@ use App\jobs\AccessCSV;
 use App\jobs\SaveFromCSV;
 use App\jobs\SyncFromStockData;
 use App\jobs\BollingerBandsStrategyGetAssignStock;
-use App\jobs\BollingerBandsStrategy;
 use App\jobs\BollingerBandsStrategyBuyingJobs;
 use App\jobs\BollingerBandsStrategySellingJobs;
 use App\query\deleteDuplicate;
@@ -31,6 +30,7 @@ use App\Traits\SchemaFunc;
 use App\Traits\stockFileLib;
 use App\jobs\CrontabCenter;
 use App\jobs\getNotUpdateStock;
+use App\simulation\RSIStrategySimulation;
 
 class StockController extends Controller
 {
@@ -187,6 +187,16 @@ class StockController extends Controller
 
 //        CrontabCenter::getInstance()->BollingerSell();
 //        CrontabCenter::getInstance()->BollingerBuy();
+
+//        RSIStrategySimulation::getInstance()->do();
+
+        // CrontabCenter::getInstance(1)->BollingerSell();
+
+        // CrontabCenter::getInstance(1)->auto_save_this_month_file_to_db();
+
+        // CrontabCenter::getInstance()->create_init_data();
+
+        CrontabCenter::getInstance()->count_all();
 
         return response( "done" , 200 )->header('Content-Type', 'text/plain');
 

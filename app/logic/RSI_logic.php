@@ -75,16 +75,15 @@ class RSI_logic
 
     private $lazy_start = '';
 
+    //      計算資料
 
-    // 		計算資料
+    public function return_data( $stock_id, $id_date_mapping, $Tech, $Tech_data, $start_count_day, $end_count_day )
+    {
 
-	public function count_data( $stock_id, $id_date_mapping, $Tech, $Tech_data )
-	{
+        $result = false;
 
-		$result = false;
-
-		if ( !empty($stock_id) )
-		{
+        if ( !empty($stock_id) )
+        {
 
             $this->id_date_mapping = $id_date_mapping;
 
@@ -100,9 +99,9 @@ class RSI_logic
 
             $this->lazy_start = Holiday_logic::getInstance()->get_work_date( 100, date("Y-m-d"), $type = 1 );
 
-		    //  取得5檔
+            //  取得5檔
 
-			$this->data = Stock_logic::getInstance()->get_stock_data( $stock_id );
+            $this->data = Stock_logic::getInstance()->get_stock_data( $stock_id, $start_count_day, $end_count_day );
 
             // 上漲點數(與前日比)
 
@@ -138,17 +137,13 @@ class RSI_logic
 
             //  格式化
 
-            $this->format();
+            return $this->format_return();
 
-            //  更新
+        }
 
-            $this->update();
+        return $result;
 
-		}
-
-		return $result;
-
-	}
+    }
 
 
 	// 	找出上漲點數，與前日相比
@@ -508,6 +503,25 @@ class RSI_logic
 
     }
 
+
+    //  回傳資料
+
+    private function format_return()
+    {
+
+        $data = $this->data->map(function ( $item ) {
+            $result = [
+                "RSI5"              =>  $item->RSI5,
+                "RSI10"             =>  $item->RSI10,
+            ];
+            return [ "date" => $item->data_date, "data" => $result ];
+        })->filter(function ($item) {
+            return $this->Tech_data[$item["date"]]["step"] === 0;
+        })->values()->toArray();
+
+        return $data ?? [];
+
+    }
 
     public static function getInstance()
     {

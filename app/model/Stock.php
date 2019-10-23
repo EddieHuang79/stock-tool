@@ -48,10 +48,12 @@ class Stock
 
 	}
 
-	public function get_stock_data( $stock_id )
+	public function get_stock_data( $stock_id, $start = '', $end = '' )
 	{
 
-		$result = DB::table($this->data_table)->where( 'stock_id', $stock_id )->orderBy( $this->data_table . '.data_date' )->get();
+		$result = DB::table($this->data_table)->where( 'stock_id', $stock_id );
+		$result = !empty($start) && !empty($end) ? $result->whereBetween($this->data_table . '.data_date', [$start, $end]) : $result;
+		$result = $result->orderBy( $this->data_table . '.data_date' )->get();
 
 		return $result;
 

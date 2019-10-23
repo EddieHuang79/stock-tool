@@ -108,7 +108,7 @@ class Stock_logic
 
 	// 		取得5項數據
 
-	public function get_stock_data( $id )
+	public function get_stock_data( $id, $start = '', $end = '' )
 	{
 
 		$result = false;
@@ -116,7 +116,7 @@ class Stock_logic
 		if ( !empty($id) && is_int($id) )
 		{
 
-			$result = Stock::getInstance()->get_stock_data( $id )->map( function( $item ) {
+			$result = Stock::getInstance()->get_stock_data( $id, $start, $end )->map( function( $item ) {
                 $item->volume = intval($item->volume);
                 $item->open = floatval($item->open);
                 $item->close = floatval($item->close);

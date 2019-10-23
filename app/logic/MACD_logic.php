@@ -57,13 +57,13 @@ class MACD_logic
      *  add lazy start 30筆 14 sec
      */
 
-	public function count_data( $stock_id, $id_date_mapping, $Tech, $Tech_data )
-	{
+    public function return_data( $stock_id, $id_date_mapping, $Tech, $Tech_data, $start_count_day, $end_count_day )
+    {
 
-		$result = false;
+        $result = false;
 
-		if ( !empty($stock_id) )
-		{
+        if ( !empty($stock_id) )
+        {
 
             $this->id_date_mapping = $id_date_mapping;
 
@@ -82,9 +82,9 @@ class MACD_logic
 
             // 基本五檔
 
-			$this->data = Stock_logic::getInstance()->get_stock_data( $stock_id );
+            $this->data = Stock_logic::getInstance()->get_stock_data( $stock_id, $start_count_day, $end_count_day );
 
-			//  DI
+            //  DI
 
             $this->getDI();
 
@@ -110,17 +110,13 @@ class MACD_logic
 
             //  格式化
 
-            $this->format();
+            return $this->format_return();
 
-            //  更新
+        }
 
-            $this->update();
+        return $result;
 
-		}
-
-		return $result;
-
-	}
+    }
 
     // 	DI = (最高價 + 最低價 + 2 × 收盤價) ÷ 4
 
@@ -383,6 +379,26 @@ class MACD_logic
         }
 
         return true;
+
+    }
+
+    //  回傳資料
+
+    private function format_return()
+    {
+
+        $data = $this->data->map(function ( $item ) {
+            $result = [
+                "DIFF"              =>  $item->DIFF,
+                "MACD"              =>  $item->MACD,
+                "OSC"               =>  $item->OSC,
+            ];
+            return [ "date" => $item->data_date, "data" => $result ];
+        })->filter(function ($item) {
+            return $this->Tech_data[$item["date"]]["step"] === 0;
+        })->values()->toArray();
+
+        return $data ?? [];
 
     }
 

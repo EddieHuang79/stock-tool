@@ -2,28 +2,13 @@
 
 namespace App\jobs;
 
-use App\jobs\AccessCSV;
-use App\jobs\SaveFromCSV;
 use App\query\updateNoDataStock;
-use App\jobs\SyncFromStockData;
-use App\jobs\CountTechnicalAnalysis;
-use App\jobs\CountSellBuyPercent;
-use App\jobs\BollingerBandsStrategyGetAssignStock;
-use App\jobs\CreateInitFile;
-use App\jobs\getNotUpdateStock;
-use App\simulation\BollingerBandsStrategySimulation11;
+use App\simulation\RSIStrategySimulation;
 
 class CrontabCenter
 {
 
 	private $date;
-
-	public function __construct()
-	{
-
-		$this->date = date("Y-m-d", strtotime("-0 days"));
-
-	}
 
 	//	自動取得股價
 
@@ -190,28 +175,40 @@ class CrontabCenter
     public function simulation()
     {
 
-        $BollingerBandsStrategySimulation11 = BollingerBandsStrategySimulation11::getInstance();
+        $RSIStrategySimulation = RSIStrategySimulation::getInstance();
 
-        $BollingerBandsStrategySimulation11->do();
+        $RSIStrategySimulation->do();
 
-        sleep(15);
+        sleep(10);
 
-        $BollingerBandsStrategySimulation11->do();
+        $RSIStrategySimulation->do();
 
-        sleep(15);
+        sleep(10);
 
-        $BollingerBandsStrategySimulation11->do();
+        $RSIStrategySimulation->do();
 
-        sleep(15);
+        sleep(10);
 
-        $BollingerBandsStrategySimulation11->do();
+        $RSIStrategySimulation->do();
 
     }
 
-	public static function getInstance()
+    // 一次算4種指標
+
+	public function count_all()
 	{
 
-		return new self;
+		CountTechnicalAnalysis::getInstance()->count_all();
+
+	}
+
+	public static function getInstance($days = 0)
+	{
+        $_this = new self;
+
+        $_this->date = date("Y-m-d", strtotime("-". $days ." days"));
+
+		return $_this;
 
 	}
 

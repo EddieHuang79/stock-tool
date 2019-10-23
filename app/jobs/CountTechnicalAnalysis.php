@@ -9,98 +9,86 @@ use App\logic\KD_logic;
 use App\logic\RSI_logic;
 use App\logic\MACD_logic;
 use App\logic\BollingerBands_logic;
-
+use App\logic\Holiday_logic;
 
 class CountTechnicalAnalysis
 {
 
+    //      計算全部指標
 
-    // 		自動計算各項技術指標
-
-    public function auto_count_technical_analysis( $type )
+    public function count_all()
     {
 
-        $result = false;
+        // 找出要計算的前10支股票代號 50 秒
 
-        if ( !empty($type) && is_int($type) )
+        $Tech = TechnicalAnalysis_logic::getInstance();
+
+        $start = microtime(true);
+
+        $stock_data = $Tech->get_stock_tech_update_date_v2()->toArray();
+
+        $content = !empty($stock_data) ? 'in process' : 'no data';
+
+        Record_logic::getInstance()->write_operate_log( $action = 'auto_count_technical_analysis_all', $content );
+
+        $end_count_day = date("Y-m-d");
+        $start_count_day = Holiday_logic::getInstance()->get_work_date( $before_days = 100, $end_count_day, $type = 1 );
+
+        if ($stock_data) 
         {
 
-            // 找出要計算的前10支股票代號
-
-            $Tech = TechnicalAnalysis_logic::getInstance();
-
-            //  2.67 sec
-
-            $stock_data = $Tech->get_stock_tech_update_date( $type )->pluck( "code" )->toArray();
-
-            $content = !empty($stock_data) ? 'in process' : 'no data';
-
-            Record_logic::getInstance()->write_operate_log( $action = 'auto_count_technical_analysis_' . $type, $content );
-
-            if (empty($stock_data))
-                return true;
-
-            foreach ( $stock_data as $code )
+            foreach ( $stock_data as $item )
             {
 
                 // 流水號
 
-                $stock_id = Stock_logic::getInstance()->get_stock( $code )->id;
+                $stock_id = $item->stock_id;
 
                 // 日期與id的對應
 
-                $Tech_data = $Tech->get_data( $stock_id );
+                $Tech_data = $Tech->get_data( $stock_id, $start_count_day, $end_count_day );
 
                 $id_date_mapping = $Tech_data->mapWithKeys( function( $item ) {
                     return [ $item->data_date => $item->id ];
                 } )->toArray();
 
-                switch ( $type )
+                $all_data = [
+                    "KD" => KD_logic::getInstance()->return_data( $stock_id, $id_date_mapping, $Tech, $Tech_data, $start_count_day, $end_count_day ),
+                    "RSI" => RSI_logic::getInstance()->return_data( $stock_id, $id_date_mapping, $Tech, $Tech_data, $start_count_day, $end_count_day ),
+                    "MACD" => MACD_logic::getInstance()->return_data( $stock_id, $id_date_mapping, $Tech, $Tech_data, $start_count_day, $end_count_day ),
+                    "Bollinger" => BollingerBands_logic::getInstance()->return_data( $stock_id, $id_date_mapping, $Tech, $Tech_data, $start_count_day, $end_count_day ),
+                ];
+
+                $update_data = [];
+
+                foreach ($all_data as $item) 
                 {
 
+                    foreach ($item as $row) 
+                    {
 
-                    // K & D
+                        $update_data[$row["date"]] = $update_data[$row["date"]] ?? ["step" => 4];
 
-                    case 1:
+                        $update_data[$row["date"]] = array_merge($update_data[$row["date"]], $row["data"]);
 
-                        KD_logic::getInstance()->count_data( $stock_id, $id_date_mapping, $Tech, $Tech_data );
+                    }
 
-                        break;
+                }
 
-                    // RSI
+                foreach ($update_data as $date => $item) 
+                {
 
-                    case 2:
+                    $tech_id = $id_date_mapping[$date] ?? 0;
 
-                        RSI_logic::getInstance()->count_data( $stock_id, $id_date_mapping, $Tech, $Tech_data );
-
-                        break;
-
-                    // MACD
-
-                    case 3:
-
-                        MACD_logic::getInstance()->count_data( $stock_id, $id_date_mapping, $Tech, $Tech_data );
-
-                        break;
-
-                    // 布林
-
-                    case 4:
-
-                        BollingerBands_logic::getInstance()->count_data( $stock_id, $id_date_mapping, $Tech, $Tech_data );
-
-                        break;
-
+                    $Tech->update_data( $item, $tech_id );
 
                 }
 
             }
 
-            $result = true;
+            $final = microtime(true) - $start;
 
         }
-
-        return $result;
 
     }
 

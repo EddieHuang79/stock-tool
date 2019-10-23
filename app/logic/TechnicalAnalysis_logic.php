@@ -429,10 +429,10 @@ class TechnicalAnalysis_logic
 
 	//      取得技術指標更新日期
 
-    public function get_stock_tech_update_date( $type )
+    public function get_stock_tech_update_date_v2()
     {
 
-        return TechnicalAnalysis::getInstance()->get_stock_tech_update_date( $type );
+        return TechnicalAnalysis::getInstance()->get_stock_tech_update_date_v2();
 
     }
 

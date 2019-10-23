@@ -29,7 +29,7 @@ class BollingerBands_logic
 
     //  布林核心
 
-    public function count_data( $stock_id, $id_date_mapping, $Tech, $Tech_data )
+    public function return_data( $stock_id, $id_date_mapping, $Tech, $Tech_data, $start_count_day, $end_count_day )
     {
 
         $result = false;
@@ -56,7 +56,7 @@ class BollingerBands_logic
 
             // 基本五檔
 
-            $this->data = Stock_logic::getInstance()->get_stock_data( $stock_id );
+            $this->data = Stock_logic::getInstance()->get_stock_data( $stock_id, $start_count_day, $end_count_day );
 
             //  MA20
 
@@ -82,15 +82,9 @@ class BollingerBands_logic
 
             $this->Bandwidth();
 
-            //  data format
+            //  格式化
 
-            $this->format();
-
-            //  更新
-
-            $this->update();
-
-            $result = true;
+            return $this->format_return();
 
         }
 
@@ -391,6 +385,28 @@ class BollingerBands_logic
         }
 
         return true;
+
+    }
+
+    //  回傳資料
+
+    private function format_return()
+    {
+
+        $data = $this->data->map(function ( $item ) {
+            $result = [
+                "MA20"          =>  $item->MA20,
+                "upperBand"     =>  $item->upperBand,
+                "lowerBand"     =>  $item->lowerBand,
+                "PercentB"      =>  $item->PercentB,
+                "Bandwidth"     =>  $item->Bandwidth,
+            ];
+            return [ "date" => $item->data_date, "data" => $result ];
+        })->filter(function ($item) {
+            return $this->Tech_data[$item["date"]]["step"] === 0;
+        })->values()->toArray();
+
+        return $data ?? [];
 
     }
 
