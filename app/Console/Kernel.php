@@ -39,13 +39,23 @@ class Kernel extends ConsoleKernel
 
        // })->cron("* 17-18,11-14 * * *");
 
+       // 資料切分 
+
+       $schedule->call(function () {
+
+           CrontabCenter::getInstance()->divide_stock_table();
+           // CrontabCenter::getInstance()->divide_tech_table();
+           // CrontabCenter::getInstance()->divide_sell_buy_table();
+
+       })->cron("* 12-15,18 * * *");
+
         //  取得假日設定
 
-       $is_holiday = Holiday_logic::getInstance()->is_holiday( time() );
+        $is_holiday = Holiday_logic::getInstance()->is_holiday( time() );
 
-       if ( $is_holiday === true && date("w") !== 6 ) {
-           return;
-       }
+        if ( $is_holiday === true ) {
+            return;
+        }
 
         // 自動更新所有股票的當日資料
 
@@ -54,6 +64,7 @@ class Kernel extends ConsoleKernel
             CrontabCenter::getInstance()->update_daily_data();
 
         })->cron("* 14,15,16 * * 1-5");
+
 
         // 股票更新失敗通知
 
@@ -75,7 +86,7 @@ class Kernel extends ConsoleKernel
 
             CrontabCenter::getInstance()->update_fail_daily_data();
 
-        })->cron("0-40 17 * * 1-5");
+        })->cron("0-10 17 * * 1-5");
 
         // 轉存基本股價資料
 
@@ -83,7 +94,7 @@ class Kernel extends ConsoleKernel
 
             CrontabCenter::getInstance()->auto_save_this_month_file_to_db();
 
-        })->cron("45 17 * * 1-5");
+        })->cron("0 15,16,17 * * 1-5");
 
         // 自動建立技術指標初始資料
 
@@ -91,7 +102,7 @@ class Kernel extends ConsoleKernel
 
             CrontabCenter::getInstance()->create_init_data();
 
-        })->cron("51-55 17 * * 1-5");
+        })->cron("21-25 17 * * 1-5");
 
         //  計算全部
 
@@ -99,78 +110,29 @@ class Kernel extends ConsoleKernel
 
             CrontabCenter::getInstance()->count_all();
 
-        })->cron("* 18-19 * * 1-4");
+        })->cron("28-37 17 * * 1-5");
 
-       // 自動計算買賣壓力 Redis要記得清 updateDaily_{date}
-
-       $schedule->call(function () {
-
-           CrontabCenter::getInstance()->count_sellBuyPercent();
-
-       })->cron("* 20 * * 1-4");
-
+        // 自動計算買賣壓力 Redis要記得清 updateDaily_{date}
 
         $schedule->call(function () {
 
             CrontabCenter::getInstance()->count_sellBuyPercent();
 
-        })->cron("0-24 21 * * 1-4");
-
-
-       // 透過Line自動回報選股條件
-
-       $schedule->call(function () {
-
-           CrontabCenter::getInstance()->BollingerBuy();
-
-       })->cron("25 21 * * 1-4");
-
-       $schedule->call(function () {
-
-            CrontabCenter::getInstance()->BollingerSell();
-
-       })->cron("30 21 * * 1-4");
-
-
-       // 禮拜六執行禮拜五的資料
-
-        //  計算全部
-
-        $schedule->call(function () {
-
-            CrontabCenter::getInstance()->count_all();
-
-        })->cron("* 0-1 * * 6");
-
-        // 自動計算買賣壓力
-
-        $schedule->call(function () {
-
-            CrontabCenter::getInstance(1)->count_sellBuyPercent();
-
-        })->cron("* 2 * * 6");
-
-        $schedule->call(function () {
-
-            CrontabCenter::getInstance(1)->count_sellBuyPercent();
-
-        })->cron("0-15 3 * * 6");
-
+        })->cron("38-47 17 * * 1-5");
 
         // 透過Line自動回報選股條件
 
         $schedule->call(function () {
 
-            CrontabCenter::getInstance(1)->BollingerBuy();
+            CrontabCenter::getInstance()->BollingerBuy();
 
-        })->cron("20 3 * * 6");
+        })->cron("50 17 * * 1-5");
 
         $schedule->call(function () {
 
-            CrontabCenter::getInstance(1)->BollingerSell();
+            CrontabCenter::getInstance()->BollingerSell();
 
-        })->cron("25 3 * * 6");
-
+        })->cron("52 17 * * 1-5");
 
         // 自動建立空白檔案
 

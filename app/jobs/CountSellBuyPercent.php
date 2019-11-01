@@ -21,21 +21,25 @@ class CountSellBuyPercent
     public function auto_count_SellBuyPercent( $date = '' )
     {
 
+        $start = microtime(true);
+
         //  工作日期
 
         $last_working_date = $date;
 
         // 取得已存在的資料 帶入目標工作日
 
-        $data = SellBuyPercent_logic::getInstance()->get_last_stock_code( $last_working_date );
+        $count_done_stock_id = SellBuyPercent_logic::getInstance()->get_count_done_stock_id( $last_working_date )->pluck("stock_id");
 
-        $last_code = !empty($data->code) ? $data->code : 0 ;
+        // 取今天轉好的stock_data
 
-        $content = (int)$last_code < 9820 ? 'in process' : 'no data';
+        $today_stock_id = SellBuyPercent_logic::getInstance()->get_today_exist_stock_data( $last_working_date );
+
+        $content = $count_done_stock_id->count() < 1603 ? 'in process' : 'no data';
 
         Record_logic::getInstance()->write_operate_log( $action = 'auto_count_SellBuyPercent', $content );
 
-        if ( (int)$last_code >= 9820 )
+        if ( $count_done_stock_id->count() >= 1603 )
             return true;
 
         // 取得所有股票
@@ -44,15 +48,28 @@ class CountSellBuyPercent
 
         $Stock = Stock_logic::getInstance();
 
-        $not_read = $Stock->get_stock_by_none_price()->pluck("code")->toArray();
+        $not_read = $Stock->get_stock_by_none_price()->pluck("id")->toArray();
 
-        $Stock->get_all_stock_info()->filter(function ($item) use($last_code, $not_read) {
-            return $item->code > $last_code && !in_array( $item->code, $not_read ) ;
-        })->forPage(0, 30)->map(function ($item) {
+        $main_data = $today_stock_id->filter(function ($item) use($count_done_stock_id, $not_read) {
+            return !in_array( $item->id, $count_done_stock_id->toArray()) && !in_array( $item->id, $not_read ) ;
+        })->forPage(0, 200);
 
-            SellBuyPercent_logic::getInstance()->count_data_logic( $item->code );
+        // 取得這次要用的股價資料
 
+        $end_count_day = date("Y-m-d");
+        $start_count_day = Holiday_logic::getInstance()->get_work_date( $before_days = 100, $end_count_day, $type = 1 );
+
+        $statistics = $Stock->get_stock_data( $main_data->pluck("id")->toArray(), $start_count_day, $end_count_day );        
+
+        $sellBuyPercentDate = SellBuyPercent_logic::getInstance()->get_data_assign_range( $main_data->pluck("id")->toArray(), $start_count_day, $end_count_day ); 
+
+        $main_data->filter(function ($item) use($statistics, $sellBuyPercentDate) {
+            return isset($statistics[$item->id]) && isset($sellBuyPercentDate[$item->id]);
+        })->map(function ($item) use($statistics, $sellBuyPercentDate) {
+            SellBuyPercent_logic::getInstance()->count_data_logic( $item, $statistics[$item->id], $sellBuyPercentDate[$item->id]->pluck('data_date')->toArray() );
         });
+
+        $final = microtime(true) - $start;
 
         return true;
 

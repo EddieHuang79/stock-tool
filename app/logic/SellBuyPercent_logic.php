@@ -11,54 +11,32 @@ class SellBuyPercent_logic
 
 	use SchemaFunc, Mathlib;
 
-    private $code;
-
-    private $stock_info;
+    private $stock_id;
 
     private $stock_data;
 
     private $sellBuyPercentDate;
 
-
-    /*  資料庫操作  */
-
-
-	// 		取得股票資訊、資料
-
-    private function get_statistics()
-	{
-
-	    $code = $this->code;
-
-        $this->stock_info = Stock_logic::getInstance()->get_stock( $code );
-
-        $this->stock_data = SellBuyPercent::getInstance()->get_statistics( $this->stock_info->id )->map(function ($item) {
-            $item->volume = intval( $item->volume );
-            $item->open = floatval( $item->open );
-            $item->highest = floatval( $item->highest );
-            $item->lowest = floatval( $item->lowest );
-            $item->close = floatval( $item->close );
-            return $item;
-        });
-
-        $this->sellBuyPercentDate = SellBuyPercent::getInstance()->get_data( $code )->pluck( "data_date" )->toArray();
-
-        return true;
-
-	}
-
-
 	// 		取得最後一筆寫入的股票代號  帶入目標工作日
 
-	public function get_last_stock_code( $last_working_date )
+	public function get_count_done_stock_id( string $last_working_date )
 	{
 
-		$result = SellBuyPercent::getInstance()->get_last_stock_code( $last_working_date );
+		$result = SellBuyPercent::getInstance()->get_count_done_stock_id( $last_working_date );
 
 		return $result;
 
 	}
 
+
+    // 取得指定區間內的買賣壓資料
+
+    public function get_data_assign_range( array $stock_id, string $start, string $end )
+    {
+
+        return SellBuyPercent::getInstance()->get_data_assign_range( $stock_id, $start, $end )->groupBy("stock_id");
+
+    }
 
 	// 		計算收盤成交價差
 	// 		公式: 當日收盤 - 前日收盤
@@ -438,14 +416,14 @@ class SellBuyPercent_logic
 
 	// 		計算買賣壓力
 
-	public function count_data_logic( $code )
+	public function count_data_logic( object $stockInfo, $statistics, $sellBuyPercentDate )
 	{
 
-		$this->code = $code;
+        $this->stock_info = $stockInfo;
 
-        //      取得數據
+        $this->stock_data = $statistics;
 
-        $this->get_statistics();
+        $this->sellBuyPercentDate = $sellBuyPercentDate;
 
         // 		計算收盤成交價差
 
@@ -507,6 +485,13 @@ class SellBuyPercent_logic
     {
 
         return SellBuyPercent::getInstance()->get_today_result( $stock_id, $date );
+
+    }
+
+    public function get_today_exist_stock_data( string $today )
+    {
+
+        return SellBuyPercent::getInstance()->get_today_exist_stock_data( $today );
 
     }
 

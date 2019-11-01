@@ -29,26 +29,17 @@ class SellBuyPercent
 
 	}
 
-	public function get_statistics( $stock_id )
-	{
+    public function get_data_assign_range( array $stock_id, string $start, string $end )
+    {
 
-		$result = DB::table($this->stock_data_table)
-					->select(
-                        $this->stock_data_table.'.id as data_id',
-                        $this->stock_data_table.'.data_date',
-                        $this->stock_data_table.'.volume',
-                        $this->stock_data_table.'.open',
-                        $this->stock_data_table.'.highest',
-                        $this->stock_data_table.'.lowest',
-                        $this->stock_data_table.'.close'
-					)
-					->where( $this->stock_data_table . '.stock_id', $stock_id )
-					->orderBy( $this->stock_data_table.'.data_date' )
-					->get();
+        $result = DB::table($this->table)
+        			->whereIn( $this->table . '.stock_id', $stock_id )
+        			->whereBetween( $this->table . '.data_date', [$start, $end] )
+        			->get();
 
-		return $result;
+        return $result;
 
-	}
+    }
 
 	public function get_first_data_time()
 	{
@@ -80,10 +71,10 @@ class SellBuyPercent
 
 	}
 
-	public function get_last_stock_code( $last_working_date )
+	public function get_count_done_stock_id( string $last_working_date )
 	{
 
-		$result = DB::table($this->table)->where( "data_date", $last_working_date )->orderBy( $this->table.'.code', "desc" )->first();
+		$result = DB::table($this->table)->select('stock_id')->where( "data_date", $last_working_date )->get();
 
 		return $result;
 
@@ -122,6 +113,23 @@ class SellBuyPercent
         return $result;
 
     }
+
+	public function get_today_exist_stock_data( string $today )
+	{
+
+		$result = DB::table($this->stock_data_table)
+					->leftJoin($this->stock_info_table, $this->stock_info_table.'.id', '=', $this->stock_data_table.'.stock_id')
+					->select(
+                        $this->stock_info_table.'.code',
+                        $this->stock_data_table.'.stock_id as id'
+					)
+					->where( $this->stock_data_table . '.data_date', $today )
+					->orderBy( $this->stock_data_table.'.data_date' )
+					->get();
+
+		return $result;
+
+	}
 
     public static function getInstance()
     {

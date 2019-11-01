@@ -52,64 +52,48 @@ class KD_logic
 
     private $data = [];
 
-    private $id_date_mapping = [];
-
-    private $Tech = [];
-
     private $Tech_data = [];
 
-    public function return_data( $stock_id, $id_date_mapping, $Tech, $Tech_data, $start_count_day, $end_count_day )
+    public function return_data( $Tech_data, $stock_price_data )
     {
 
-        $result = false;
+        $this->Tech_data = $Tech_data->mapWithKeys(function ($item){
+            return [$item->data_date => [
+                "step"          => $item->step,
+                "RSV"           => $item->RSV,
+                "K9"            => $item->K9,
+                "D9"            => $item->D9
+            ]];
+        })->toArray();
 
-        if ( !empty($stock_id) )
-        {
+        $this->data = $stock_price_data;
 
-            $this->id_date_mapping = $id_date_mapping;
+        //  找出N天內最高價
 
-            $this->Tech = $Tech;
+        $this->get_highest_close_value();
 
-            $this->Tech_data = $Tech_data->mapWithKeys(function ($item){
-                return [$item->data_date => [
-                    "step"          => $item->step,
-                    "RSV"           => $item->RSV,
-                    "K9"            => $item->K9,
-                    "D9"            => $item->D9
-                ]];
-            })->toArray();
+        //  找出N天內最低價
 
-            $this->data = Stock_logic::getInstance()->get_stock_data( $stock_id, $start_count_day, $end_count_day );
+        $this->get_lowest_close_value();
 
-            //  找出N天內最高價
+        //  計算RSV
 
-            $this->get_highest_close_value();
+        $this->get_RSV_value();
 
-            //  找出N天內最低價
+        //  取得K值
 
-            $this->get_lowest_close_value();
+        $this->get_K_Value();
 
-            //  計算RSV
+        //  取得D值
 
-            $this->get_RSV_value();
+        $this->get_D_Value();
 
-            //  取得K值
+        //  格式化
 
-            $this->get_K_Value();
-
-            //  取得D值
-
-            $this->get_D_Value();
-
-            //  格式化
-
-            return $this->format_return();
-
-        }
-
-        return $result;
+        return $this->format_return();
 
     }
+    
 
     // 	找出N天內最高價
 
@@ -239,6 +223,7 @@ class KD_logic
 
     }
 
+
     //  取得D值
 
     private function get_D_Value()
@@ -270,56 +255,6 @@ class KD_logic
 
     }
 
-    //  格式化
-
-    private function format()
-    {
-
-        $this->data = $this->data->map(function ( $item ) {
-            $result = [
-                "RSV"           =>  $item->RSV,
-                "K9"            =>  $item->K9,
-                "D9"            =>  $item->D9,
-                "step"          =>  1,
-                "updated_at"    =>  date("Y-m-d H:i:s")
-            ];
-            return [ "date" => $item->data_date, "data" => $result ];
-        });
-
-        $this->data = $this->data->filter(function ($item) {
-            return $this->Tech_data[$item["date"]]["step"] === 0;
-        }) ;
-
-        return true;
-
-    }
-
-    //  更新
-
-    private function update()
-    {
-
-        $data = $this->data->toArray();
-
-        $id_date_mapping = $this->id_date_mapping;
-
-        $Tech = $this->Tech;
-
-        foreach ($data as $row)
-        {
-
-            if ( isset($id_date_mapping[$row["date"]]) )
-            {
-
-                $Tech->update_data( $row["data"], $id_date_mapping[$row["date"]] );
-
-            }
-
-        }
-
-        return true;
-
-    }
 
     //  回傳資料
 

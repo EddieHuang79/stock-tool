@@ -108,26 +108,17 @@ class Stock_logic
 
 	// 		取得5項數據
 
-	public function get_stock_data( $id, $start = '', $end = '' )
+	public function get_stock_data( array $id, string $start, string $end )
 	{
 
-		$result = false;
-
-		if ( !empty($id) && is_int($id) )
-		{
-
-			$result = Stock::getInstance()->get_stock_data( $id, $start, $end )->map( function( $item ) {
-                $item->volume = intval($item->volume);
-                $item->open = floatval($item->open);
-                $item->close = floatval($item->close);
-                $item->highest = floatval($item->highest);
-                $item->lowest = floatval($item->lowest);
-                return $item;
-            } );
-
-		}
-
-		return $result;
+		return Stock::getInstance()->get_stock_data( $id, $start, $end )->map( function( $item ) {
+            $item->volume = intval($item->volume);
+            $item->open = floatval($item->open);
+            $item->close = floatval($item->close);
+            $item->highest = floatval($item->highest);
+            $item->lowest = floatval($item->lowest);
+            return $item;
+        })->groupBy("stock_id");
 
 	}
 

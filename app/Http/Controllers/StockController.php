@@ -185,8 +185,8 @@ class StockController extends Controller
 
 //        BollingerBandsStrategySimulation11::getInstance()->do();
 
-//        CrontabCenter::getInstance()->BollingerSell();
-//        CrontabCenter::getInstance()->BollingerBuy();
+       // CrontabCenter::getInstance()->BollingerSell();
+       // CrontabCenter::getInstance()->BollingerBuy();
 
 //        RSIStrategySimulation::getInstance()->do();
 
@@ -196,7 +196,24 @@ class StockController extends Controller
 
         // CrontabCenter::getInstance()->create_init_data();
 
-        CrontabCenter::getInstance()->count_all();
+        // CrontabCenter::getInstance()->count_all();
+        // CrontabCenter::getInstance()->auto_save_this_month_file_to_db();
+        // CrontabCenter::getInstance()->count_sellBuyPercent();
+        // CrontabCenter::getInstance()->divide_table();
+
+        $startDate = '2017-01-05';
+        $endDate = '2017-01-05';
+
+        $data = DB::table('stock_data')->whereBetween("data_date", [$startDate, $endDate])->get();
+
+        $year = date("Y", strtotime($startDate));
+
+        DB::table("stock_data_" . $year)->insert($data->map(function($item) { 
+            $item = get_object_vars($item); 
+            unset($item["id"]);
+            return $item; 
+        })->toArray());
+              
 
         return response( "done" , 200 )->header('Content-Type', 'text/plain');
 

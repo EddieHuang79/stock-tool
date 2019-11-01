@@ -67,81 +67,60 @@ class RSI_logic
 
     private $data = [];
 
-    private $id_date_mapping = [];
-
-    private $Tech = [];
-
     private $Tech_data = [];
-
-    private $lazy_start = '';
 
     //      計算資料
 
-    public function return_data( $stock_id, $id_date_mapping, $Tech, $Tech_data, $start_count_day, $end_count_day )
+    public function return_data( $Tech_data, $stock_price_data )
     {
 
-        $result = false;
+        $this->Tech_data = $Tech_data->mapWithKeys(function ($item){
+            return [$item->data_date => [
+                "step"          => $item->step,
+                "RSI5"          => $item->RSI5,
+                "RSI10"         => $item->RSI10,
+            ]];
+        })->toArray();
 
-        if ( !empty($stock_id) )
-        {
+        //  取得5檔
 
-            $this->id_date_mapping = $id_date_mapping;
+        $this->data = $stock_price_data;
 
-            $this->Tech = $Tech;
+        // 上漲點數(與前日比)
 
-            $this->Tech_data = $Tech_data->mapWithKeys(function ($item){
-                return [$item->data_date => [
-                    "step"          => $item->step,
-                    "RSI5"          => $item->RSI5,
-                    "RSI10"         => $item->RSI10,
-                ]];
-            })->toArray();
+        $this->get_rise_num_value();
 
-            $this->lazy_start = Holiday_logic::getInstance()->get_work_date( 100, date("Y-m-d"), $type = 1 );
+        // 下跌點數(與前日比)
 
-            //  取得5檔
+        $this->get_fall_num_value();
 
-            $this->data = Stock_logic::getInstance()->get_stock_data( $stock_id, $start_count_day, $end_count_day );
+        // 5日內上漲總和平滑平均值 威爾德平滑法
 
-            // 上漲點數(與前日比)
+        $this->getWildersValue_5days_rise();
 
-            $this->get_rise_num_value();
+        // 5日內下跌總和平滑平均值 威爾德平滑法
 
-            // 下跌點數(與前日比)
+        $this->getWildersValue_5days_fall();
 
-            $this->get_fall_num_value();
+        // 計算RSI5
 
-            // 5日內上漲總和平滑平均值 威爾德平滑法
+        $this->getRSI5();
 
-            $this->getWildersValue_5days_rise();
+        // 10日內上漲總和平滑平均值 威爾德平滑法
 
-            // 5日內下跌總和平滑平均值 威爾德平滑法
+        $this->getWildersValue_10days_rise();
 
-            $this->getWildersValue_5days_fall();
+        // 10日內下跌總和平滑平均值 威爾德平滑法
 
-            // 計算RSI5
+        $this->getWildersValue_10days_fall();
 
-            $this->getRSI5();
+        // 計算RSI10
 
-            // 10日內上漲總和平滑平均值 威爾德平滑法
+        $this->getRSI10();
 
-            $this->getWildersValue_10days_rise();
+        //  格式化
 
-            // 10日內下跌總和平滑平均值 威爾德平滑法
-
-            $this->getWildersValue_10days_fall();
-
-            // 計算RSI10
-
-            $this->getRSI10();
-
-            //  格式化
-
-            return $this->format_return();
-
-        }
-
-        return $result;
+        return $this->format_return();
 
     }
 
@@ -155,11 +134,6 @@ class RSI_logic
             try {
 
                 if ( $key < 1 )
-                {
-                    throw new \Exception(0.0);
-                }
-
-                if ( strtotime($item->data_date) < strtotime($this->lazy_start) )
                 {
                     throw new \Exception(0.0);
                 }
@@ -190,11 +164,6 @@ class RSI_logic
             try {
 
                 if ( $key < 1 )
-                {
-                    throw new \Exception(0.0);
-                }
-
-                if ( strtotime($item->data_date) < strtotime($this->lazy_start) )
                 {
                     throw new \Exception(0.0);
                 }
@@ -234,11 +203,6 @@ class RSI_logic
                     throw new \Exception(0.0);
                 }
 
-                if ( strtotime($item->data_date) < strtotime($this->lazy_start) )
-                {
-                    throw new \Exception(0.0);
-                }
-
                 $sub_data = array_slice( $this->data->pluck("rise_num")->values()->toArray(), $key - ($n - 1), $n );
 
                 $item->UP_5days = $key !== $n - 1 ?
@@ -268,11 +232,6 @@ class RSI_logic
             try {
 
                 if ( $key < $n - 1 )
-                {
-                    throw new \Exception(0.0);
-                }
-
-                if ( strtotime($item->data_date) < strtotime($this->lazy_start) )
                 {
                     throw new \Exception(0.0);
                 }
@@ -352,11 +311,6 @@ class RSI_logic
                     throw new \Exception(0.0);
                 }
 
-                if ( strtotime($item->data_date) < strtotime($this->lazy_start) )
-                {
-                    throw new \Exception(0.0);
-                }
-
                 $sub_data = array_slice( $this->data->pluck("rise_num")->values()->toArray(), $key - ($n - 1), $n );
                 $item->UP_10days = $key !== $n - 1 ?
                     $this->data[$key - 1]->UP_10days + $this->except( ( $this->data[$key]->rise_num - $this->data[$key - 1]->UP_10days ), $n ) :
@@ -385,11 +339,6 @@ class RSI_logic
             try {
 
                 if ( $key < $n - 1 )
-                {
-                    throw new \Exception(0.0);
-                }
-
-                if ( strtotime($item->data_date) < strtotime($this->lazy_start) )
                 {
                     throw new \Exception(0.0);
                 }
@@ -475,34 +424,6 @@ class RSI_logic
         return true;
 
     }
-
-    //  更新
-
-    private function update()
-    {
-
-        $data = $this->data->toArray();
-
-        $id_date_mapping = $this->id_date_mapping;
-
-        $Tech = $this->Tech;
-
-        foreach ($data as $row)
-        {
-
-            if ( isset($id_date_mapping[$row["date"]]) )
-            {
-
-                $Tech->update_data( $row["data"], $id_date_mapping[$row["date"]] );
-
-            }
-
-        }
-
-        return true;
-
-    }
-
 
     //  回傳資料
 

@@ -3,8 +3,9 @@
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Support\Facades\DB;
 
-class SellBuyPercent extends Migration
+class Partition extends Migration
 {
 
     private $stock_data_table = 'stock_data';
@@ -18,9 +19,9 @@ class SellBuyPercent extends Migration
      */
     public function up()
     {
-
-        Schema::create($this->sell_buy_percent_table, function (Blueprint $table) {
-            $table->increments('id');
+        
+        Schema::create("sell_buy_percent_partition", function (Blueprint $table) {
+            $table->integer('id')->unsigned();
             $table->integer('stock_id')->unsigned();
             $table->integer('stock_data_id')->unsigned();
             $table->integer('code');
@@ -40,10 +41,18 @@ class SellBuyPercent extends Migration
             $table->timestamps();
         });
 
-        Schema::table($this->sell_buy_percent_table, function($table) {
-            $table->foreign('stock_id')->references('id')->on($this->stock_info_table);
-            $table->foreign('stock_data_id')->references('id')->on($this->stock_data_table);
+        Schema::table("sell_buy_percent_partition", function($table) {
+            $table->primary(['id', 'data_date']);
+            // $table->foreign('stock_id')->references('id')->on($this->stock_info_table);
+            // $table->foreign('stock_data_id')->references('id')->on($this->stock_data_table);
         });
+
+        DB::statement('ALTER TABLE sell_buy_percent_partition PARTITION BY RANGE( YEAR(data_date) ) (
+            PARTITION p2016 VALUES LESS THAN (2017),
+            PARTITION p2017 VALUES LESS THAN (2018),
+            PARTITION p2018 VALUES LESS THAN (2019),
+            PARTITION p2019 VALUES LESS THAN (2020)
+        )');
 
     }
 
@@ -54,9 +63,6 @@ class SellBuyPercent extends Migration
      */
     public function down()
     {
-
-        Schema::dropIfExists( $this->sell_buy_percent_table );
-
+        Schema::dropIfExists( "sell_buy_percent_partition" );
     }
-
 }

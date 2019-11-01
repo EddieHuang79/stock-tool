@@ -31,17 +31,14 @@ class TechnicalAnalysis
 
 	}
 
-	public function get_data( $stock_id, $start, $end )
+	public function get_data( array $stock_id, string $start, string $end )
 	{
 
-		$result = DB::table( $this->table )
-					->where( $this->table . '.stock_id', $stock_id );
-
-		$result = !empty($start) && !empty($end) ? $result->whereBetween( $this->table . ".data_date", [$start, $end] ) : $result ;
-
-		$result = $result->orderby( $this->table . '.data_date' )->get();
-
-		return $result;
+		return DB::table( $this->table )
+				->whereIn( $this->table . '.stock_id', $stock_id )
+				->whereBetween( $this->table . ".data_date", [$start, $end] )
+				->orderby( $this->table . '.data_date' )
+				->get();
 
 	}
 
@@ -99,7 +96,7 @@ class TechnicalAnalysis
 						$this->table . '.code'
 					)
 					->where( "step", 0 )
-					->groupby( 'code', 'stock_id' )->orderby( $this->table . '.code' )->limit(20)->get();
+					->groupby( 'code', 'stock_id' )->orderby( $this->table . '.code' )->limit(200)->get();
 
 		return $result;
 

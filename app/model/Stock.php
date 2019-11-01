@@ -48,12 +48,24 @@ class Stock
 
 	}
 
-	public function get_stock_data( $stock_id, $start = '', $end = '' )
+	public function get_stock_data( array $stock_id, string $start, string $end )
 	{
 
-		$result = DB::table($this->data_table)->where( 'stock_id', $stock_id );
-		$result = !empty($start) && !empty($end) ? $result->whereBetween($this->data_table . '.data_date', [$start, $end]) : $result;
-		$result = $result->orderBy( $this->data_table . '.data_date' )->get();
+		$result = DB::table($this->data_table)
+					->select(
+						$this->data_table.'.id as data_id',
+						$this->data_table.'.stock_id',
+						$this->data_table.'.data_date',
+						$this->data_table.'.volume',
+						$this->data_table.'.open',
+						$this->data_table.'.highest',
+						$this->data_table.'.lowest',
+						$this->data_table.'.close'
+					)		
+					->whereIn( 'stock_id', $stock_id )
+					->whereBetween($this->data_table . '.data_date', [$start, $end])
+					->orderBy( $this->data_table . '.data_date' )
+					->get();
 
 		return $result;
 
@@ -150,7 +162,7 @@ class Stock
 
         $result = DB::table($this->data_table)
             ->leftJoin($this->table, $this->table.'.id', '=', $this->data_table.'.stock_id')
-            ->select( $this->table . ".code" )
+            ->select( $this->table . ".id", $this->table . ".code" )
             ->where( 'close', '--' )
             ->groupBy($this->data_table.'.stock_id')
             ->get();

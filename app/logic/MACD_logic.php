@@ -41,13 +41,7 @@ class MACD_logic
 
     private $data = [];
 
-    private $id_date_mapping = [];
-
-    private $Tech = [];
-
     private $Tech_data = [];
-
-    private $lazy_start = '';
 
     // 		計算資料
 
@@ -57,64 +51,49 @@ class MACD_logic
      *  add lazy start 30筆 14 sec
      */
 
-    public function return_data( $stock_id, $id_date_mapping, $Tech, $Tech_data, $start_count_day, $end_count_day )
+    public function return_data( $Tech_data, $stock_price_data )
     {
 
-        $result = false;
+        $this->Tech_data = $Tech_data->mapWithKeys(function ($item){
+            return [$item->data_date => [
+                "step"              =>  $item->step,
+                "DIFF"              =>  $item->DIFF,
+                "MACD"              =>  $item->MACD,
+                "OSC"               =>  $item->OSC,
+            ]];
+        })->toArray();
 
-        if ( !empty($stock_id) )
-        {
+        // 基本五檔
 
-            $this->id_date_mapping = $id_date_mapping;
+        $this->data = $stock_price_data;
 
-            $this->Tech = $Tech;
+        //  DI
 
-            $this->Tech_data = $Tech_data->mapWithKeys(function ($item){
-                return [$item->data_date => [
-                    "step"              =>  $item->step,
-                    "DIFF"              =>  $item->DIFF,
-                    "MACD"              =>  $item->MACD,
-                    "OSC"               =>  $item->OSC,
-                ]];
-            })->toArray();
+        $this->getDI();
 
-            $this->lazy_start = Holiday_logic::getInstance()->get_work_date( 150, date("Y-m-d"), $type = 1 );
+        //  EMA12
 
-            // 基本五檔
+        $this->getEMA12();
 
-            $this->data = Stock_logic::getInstance()->get_stock_data( $stock_id, $start_count_day, $end_count_day );
+        //  EMA26
 
-            //  DI
+        $this->getEMA26();
 
-            $this->getDI();
+        //  DIFF
 
-            //  EMA12
+        $this->getDIFF();
 
-            $this->getEMA12();
+        //  MACD
 
-            //  EMA26
+        $this->getMACD();
 
-            $this->getEMA26();
+        //  OSC
 
-            //  DIFF
+        $this->getOSC();
 
-            $this->getDIFF();
+        //  格式化
 
-            //  MACD
-
-            $this->getMACD();
-
-            //  OSC
-
-            $this->getOSC();
-
-            //  格式化
-
-            return $this->format_return();
-
-        }
-
-        return $result;
+        return $this->format_return();
 
     }
 
@@ -143,11 +122,6 @@ class MACD_logic
             try {
 
                 if ( $key < $this->n1 - 1 )
-                {
-                    throw new \Exception(0.0);
-                }
-
-                if ( strtotime($item->data_date) < strtotime($this->lazy_start) )
                 {
                     throw new \Exception(0.0);
                 }
@@ -181,11 +155,6 @@ class MACD_logic
             try {
 
                 if ( $key < $this->n2 - 1 )
-                {
-                    throw new \Exception(0.0);
-                }
-
-                if ( strtotime($item->data_date) < strtotime($this->lazy_start) )
                 {
                     throw new \Exception(0.0);
                 }
@@ -227,11 +196,6 @@ class MACD_logic
                     throw new \Exception($this->Tech_data[$item->data_date]["DIFF"]);
                 }
 
-                if ( strtotime($item->data_date) < strtotime($this->lazy_start) )
-                {
-                    throw new \Exception(0.0);
-                }
-
                 $item->DIFF = round($item->EMA12 - $item->EMA26, 2) ;
 
             } catch (\Exception $e) {
@@ -264,11 +228,6 @@ class MACD_logic
                 if ( isset($this->Tech_data[$item->data_date]) && $this->Tech_data[$item->data_date]["step"] === 3 )
                 {
                     throw new \Exception($this->Tech_data[$item->data_date]["MACD"]);
-                }
-
-                if ( strtotime($item->data_date) < strtotime($this->lazy_start) )
-                {
-                    throw new \Exception(0.0);
                 }
 
                 $sub_data = array_slice( $this->data->pluck("DIFF")->values()->toArray(), $key - ($this->n3 - 1), $this->n3 );
@@ -309,11 +268,6 @@ class MACD_logic
                     throw new \Exception($this->Tech_data[$item->data_date]["OSC"]);
                 }
 
-                if ( strtotime($item->data_date) < strtotime($this->lazy_start) )
-                {
-                    throw new \Exception(0.0);
-                }
-
                 $item->OSC = $item->DIFF - $item->MACD ;
                 $item->OSC = round( $item->OSC, 2 );
 
@@ -350,33 +304,6 @@ class MACD_logic
         $this->data = $this->data->filter(function ($item) {
             return $this->Tech_data[$item["date"]]["step"] === 2;
         }) ;
-
-        return true;
-
-    }
-
-    //  更新
-
-    private function update()
-    {
-
-        $data = $this->data->toArray();
-
-        $id_date_mapping = $this->id_date_mapping;
-
-        $Tech = $this->Tech;
-
-        foreach ($data as $row)
-        {
-
-            if ( isset($id_date_mapping[$row["date"]]) )
-            {
-
-                $Tech->update_data( $row["data"], $id_date_mapping[$row["date"]] );
-
-            }
-
-        }
 
         return true;
 

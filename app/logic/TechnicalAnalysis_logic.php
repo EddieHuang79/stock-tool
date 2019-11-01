@@ -87,19 +87,10 @@ class TechnicalAnalysis_logic
 
 	// 		取得資料
 
-	public function get_data( $stock_id, $start = '', $end = '' )
+	public function get_data( array $stock_id, string $start, string $end )
 	{
 
-		$result = [];
-
-		if ( !empty($stock_id) && is_int($stock_id) )
-		{
-
-			$result = TechnicalAnalysis::getInstance()->get_data( $stock_id, $start, $end );
-
-		}
-
-		return $result ;
+		return TechnicalAnalysis::getInstance()->get_data( $stock_id, $start, $end )->groupBy('stock_id');
 
 	}
 

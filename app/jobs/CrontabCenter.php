@@ -4,6 +4,7 @@ namespace App\jobs;
 
 use App\query\updateNoDataStock;
 use App\simulation\RSIStrategySimulation;
+use App\logic\DataDivide_logic;
 
 class CrontabCenter
 {
@@ -200,6 +201,77 @@ class CrontabCenter
 
 		CountTechnicalAnalysis::getInstance()->count_all();
 
+	}
+
+    // 切分資料庫
+
+	public function divide_stock_table()
+	{
+
+		DataDivide_logic::getInstance()->divide_stock_data();
+
+		sleep(5);
+
+		DataDivide_logic::getInstance()->divide_stock_data();
+
+		sleep(5);
+
+		DataDivide_logic::getInstance()->divide_stock_data();
+
+		sleep(5);
+
+		DataDivide_logic::getInstance()->divide_stock_data();
+
+		sleep(5);
+
+		DataDivide_logic::getInstance()->divide_stock_data();
+
+	}
+
+	public function divide_tech_table()
+	{
+
+		DataDivide_logic::getInstance()->divide_technical_data();
+
+		sleep(5);
+
+		DataDivide_logic::getInstance()->divide_technical_data();
+
+		sleep(5);
+
+		DataDivide_logic::getInstance()->divide_technical_data();
+
+		sleep(5);
+
+		DataDivide_logic::getInstance()->divide_technical_data();
+
+		sleep(5);
+
+		DataDivide_logic::getInstance()->divide_technical_data();
+		
+	}
+
+	public function divide_sell_buy_table()
+	{
+
+		DataDivide_logic::getInstance()->divide_sellBuyPercent_data();
+
+		sleep(5);
+
+		DataDivide_logic::getInstance()->divide_sellBuyPercent_data();
+
+		sleep(5);
+
+		DataDivide_logic::getInstance()->divide_sellBuyPercent_data();
+
+		sleep(5);
+
+		DataDivide_logic::getInstance()->divide_sellBuyPercent_data();
+
+		sleep(5);
+
+		DataDivide_logic::getInstance()->divide_sellBuyPercent_data();
+		
 	}
 
 	public static function getInstance($days = 0)

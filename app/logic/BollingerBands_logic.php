@@ -19,76 +19,55 @@ class BollingerBands_logic
 
     private $data = [];
 
-    private $id_date_mapping = [];
-
-    private $Tech = [];
-
     private $Tech_data = [];
-
-    private $lazy_start = '';
 
     //  布林核心
 
-    public function return_data( $stock_id, $id_date_mapping, $Tech, $Tech_data, $start_count_day, $end_count_day )
+    public function return_data( $Tech_data, $stock_price_data )
     {
 
-        $result = false;
+        $this->Tech_data = $Tech_data->mapWithKeys(function ($item){
+            return [$item->data_date => [
+                "step"              =>  $item->step,
+                "MA20"              =>  $item->MA20,
+                "upperBand"         =>  $item->upperBand,
+                "lowerBand"         =>  $item->lowerBand,
+                "PercentB"          =>  $item->percentB,
+                "Bandwidth"         =>  $item->bandwidth,
+            ]];
+        })->toArray();
 
-        if ( !empty($stock_id) )
-        {
+        // 基本五檔
 
-            $this->id_date_mapping = $id_date_mapping;
+        $this->data = $stock_price_data;
 
-            $this->Tech = $Tech;
+        //  MA20
 
-            $this->Tech_data = $Tech_data->mapWithKeys(function ($item){
-                return [$item->data_date => [
-                    "step"              =>  $item->step,
-                    "MA20"              =>  $item->MA20,
-                    "upperBand"         =>  $item->upperBand,
-                    "lowerBand"         =>  $item->lowerBand,
-                    "PercentB"          =>  $item->percentB,
-                    "Bandwidth"         =>  $item->bandwidth,
-                ]];
-            })->toArray();
+        $this->MA20();
 
-            $this->lazy_start = Holiday_logic::getInstance()->get_work_date( 100, date("Y-m-d"), $type = 1 );
+        //  標準差
 
-            // 基本五檔
+        $this->standardDeviation();
 
-            $this->data = Stock_logic::getInstance()->get_stock_data( $stock_id, $start_count_day, $end_count_day );
+        //  上軌
 
-            //  MA20
+        $this->upperBand();
 
-            $this->MA20();
+        //  下軌
 
-            //  標準差
+        $this->lowerBand();
 
-            $this->standardDeviation();
+        //  Percent B
 
-            //  上軌
+        $this->PercentB();
 
-            $this->upperBand();
+        //  Bandwidth
 
-            //  下軌
+        $this->Bandwidth();
 
-            $this->lowerBand();
+        //  格式化
 
-            //  Percent B
-
-            $this->PercentB();
-
-            //  Bandwidth
-
-            $this->Bandwidth();
-
-            //  格式化
-
-            return $this->format_return();
-
-        }
-
-        return $result;
+        return $this->format_return();
 
     }
 
@@ -111,11 +90,6 @@ class BollingerBands_logic
                 if ( isset($this->Tech_data[$item->data_date]) && $this->Tech_data[$item->data_date]["step"] === 4 )
                 {
                     throw new \Exception($this->Tech_data[$item->data_date]["MA20"]);
-                }
-
-                if ( strtotime($item->data_date) < strtotime($this->lazy_start) )
-                {
-                    throw new \Exception(0.0);
                 }
 
                 $sub_data = array_slice( $this->data->pluck("close")->values()->toArray(), $key - ($this->n - 1), $this->n );
@@ -145,11 +119,6 @@ class BollingerBands_logic
             try {
 
                 if ( $key < $this->n - 1 )
-                {
-                    throw new \Exception(0.0);
-                }
-
-                if ( strtotime($item->data_date) < strtotime($this->lazy_start) )
                 {
                     throw new \Exception(0.0);
                 }
@@ -195,11 +164,6 @@ class BollingerBands_logic
                     throw new \Exception($this->Tech_data[$item->data_date]["upperBand"]);
                 }
 
-                if ( strtotime($item->data_date) < strtotime($this->lazy_start) )
-                {
-                    throw new \Exception(0.0);
-                }
-
                 $item->upperBand = round( $item->MA20 + $item->standardDeviation * 2, 2 );
 
             } catch (\Exception $e) {
@@ -232,11 +196,6 @@ class BollingerBands_logic
                 if ( isset($this->Tech_data[$item->data_date]) && $this->Tech_data[$item->data_date]["step"] === 4 )
                 {
                     throw new \Exception($this->Tech_data[$item->data_date]["lowerBand"]);
-                }
-
-                if ( strtotime($item->data_date) < strtotime($this->lazy_start) )
-                {
-                    throw new \Exception(0.0);
                 }
 
                 $item->lowerBand = round( $item->MA20 - $item->standardDeviation * 2, 2 );
@@ -273,11 +232,6 @@ class BollingerBands_logic
                     throw new \Exception($this->Tech_data[$item->data_date]["PercentB"]);
                 }
 
-                if ( strtotime($item->data_date) < strtotime($this->lazy_start) )
-                {
-                    throw new \Exception(0.0);
-                }
-
                 $PercentB = $this->except( $item->close - $item->lowerBand, $item->upperBand - $item->lowerBand );
                 $item->PercentB = round( $PercentB, 2 );
 
@@ -311,11 +265,6 @@ class BollingerBands_logic
                 if ( isset($this->Tech_data[$item->data_date]) && $this->Tech_data[$item->data_date]["step"] === 4 )
                 {
                     throw new \Exception($this->Tech_data[$item->data_date]["Bandwidth"]);
-                }
-
-                if ( strtotime($item->data_date) < strtotime($this->lazy_start) )
-                {
-                    throw new \Exception(0.0);
                 }
 
                 $Bandwidth = $this->except( $item->upperBand - $item->lowerBand, $item->MA20 );
@@ -356,33 +305,6 @@ class BollingerBands_logic
         $this->data = $this->data->filter(function ($item) {
             return $this->Tech_data[$item["date"]]["step"] === 3;
         });
-
-        return true;
-
-    }
-
-    //  更新
-
-    private function update()
-    {
-
-        $data = $this->data->toArray();
-
-        $id_date_mapping = $this->id_date_mapping;
-
-        $Tech = $this->Tech;
-
-        foreach ($data as $row)
-        {
-
-            if ( isset($id_date_mapping[$row["date"]]) )
-            {
-
-                $Tech->update_data( $row["data"], $id_date_mapping[$row["date"]] );
-
-            }
-
-        }
 
         return true;
 

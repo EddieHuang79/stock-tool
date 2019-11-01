@@ -13,6 +13,9 @@ class Redis_tool
     private $update_daily_key = "updateDaily_";
     private $update_fail_key = "updateFail_";
     private $update_fail_process_key = "updateFailProcess_";
+    private $divide_stock_key = "divideStockDataDate";
+    private $divide_tech_key = "divideTechDate";
+    private $divide_sellBuy_key = "divideSellBuyDate";
 
 
     // 設定當日股票更新清單
@@ -181,6 +184,60 @@ class Redis_tool
         }
 
         return true;
+
+    }
+
+    // 設定劃分key的日期
+
+    public function setDivideStockDataKey($date)
+    {
+
+        return Redis::set( $this->divide_stock_key, $date );
+
+    }
+
+    // 取得劃分key的日期
+
+    public function getDivideStockDataKey()
+    {
+
+        return Redis::get( $this->divide_stock_key );
+
+    }
+
+    // 設定劃分key的日期
+
+    public function setDivideTechKey($date)
+    {
+
+        return Redis::set( $this->divide_tech_key, $date );
+
+    }
+
+    // 取得劃分key的日期
+
+    public function getDivideTechKey()
+    {
+
+        return Redis::get( $this->divide_tech_key );
+
+    }
+
+    // 設定劃分key的日期
+
+    public function setDivideSellBuyKey($date)
+    {
+
+        return Redis::set( $this->divide_sellBuy_key, $date );
+
+    }
+
+    // 取得劃分key的日期
+
+    public function getDivideSellBuyKey()
+    {
+
+        return Redis::get( $this->divide_sellBuy_key );
 
     }
 
