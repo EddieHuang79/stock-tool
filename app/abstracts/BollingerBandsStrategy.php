@@ -61,6 +61,12 @@ class BollingerBandsStrategy
 
     protected $volume_limit = 500;
 
+    protected $page = 1;
+    
+    protected $limit = 300;
+
+    protected $year;
+
     protected function set_file_name( $fileName )
     {
         $this->file_name = $fileName;
@@ -124,9 +130,11 @@ class BollingerBandsStrategy
 
         try{
 
-            $this->Stock_data = $this->Stock->get_stock_data_by_date_range( $this->start, $this->end, $this->code );
+            $stockInfo = $this->Stock->get_all_stock_info();
 
-            $this->stock_id = $this->Stock_data[$this->code][0]->stock_id;
+            $this->stock_id = $stockInfo->pluck('id')->forPage($this->page, $this->limit)->toArray();
+
+            $this->Stock_data = $this->Stock->get_stock_data($this->stock_id, $this->start, $this->end);
 
             if ( empty($this->Stock_data) )
             {
@@ -135,10 +143,11 @@ class BollingerBandsStrategy
 
             }
 
-            $this->Stock_data = collect( $this->Stock_data[$this->code] )->mapWithKeys(function ($item) {
-                return [
-                    $item->data_date => $this->except( $item->highest + $item->lowest, 2 )
-                ];
+            $this->Stock_data = $this->Stock_data->map(function ($item, $stock_id) {
+                $data = collect($item)->mapWithKeys(function($item) {
+                    return [$item->data_date => $this->except( $item->highest + $item->lowest, 2 )];
+                })->toArray();
+                return $data;
             })->toArray();
 
         }catch (\Exception $e) {
@@ -154,26 +163,25 @@ class BollingerBandsStrategy
     private function setPercentBData()
     {
 
-        $this->Tech_data = $this->Tech->get_data( $this->stock_id )->filter( function ($item) {
-            return $item->step === 4 && $item->percentB !== 0.0 && $this->start <= $item->data_date && $item->data_date <= $this->end;
-        } )->map(function ($item) {
-            return [
-                "data_date"     => $item->data_date,
-                "percentB"      => $item->percentB,
-                "bandwidth"     => $item->bandwidth
-            ];
-        })->values()->toArray();
+        $this->Tech_data = $this->Tech->get_data_by_year( $this->year, $this->stock_id );
 
     }
 
     private function setSellBuyPercentData()
     {
 
-        $this->sellBuyPercent = SellBuyPercent_logic::getInstance()->get_data( $this->code )->filter(function ($item){
-            return $item->result > 0;
-        })->mapWithKeys(function ($item){
-            return [$item->data_date => $item->result];
-        })->toArray();
+        $this->sellBuyPercent = SellBuyPercent_logic::getInstance()->get_data_by_year( $this->year, $this->stock_id )->groupBy('stock_id')
+            ->map(function ($item){
+
+                return collect($item)->filter(function($item) {
+
+                    return $item->result > 0;
+                })->mapWithKeys(function ($item){
+                    
+                    return [$item->data_date => $item->result];
+                })->toArray();
+            })
+            ->toArray();
 
     }
 
@@ -198,12 +206,12 @@ class BollingerBandsStrategy
 
         try {
 
-            //  價格太低的濾掉
+            // //  價格太低的濾掉
 
-            if ( $this->count_avg() < 20 )
-            {
-                throw new \Exception( "均價低於20" );
-            }
+            // if ( $this->count_avg() < 20 )
+            // {
+            //     throw new \Exception( "均價低於20" );
+            // }
 
             //  沒資料
 
@@ -223,20 +231,22 @@ class BollingerBandsStrategy
 
                 }
 
-                collect( $this->sell_date )->map(function ($item, $key){
+                collect( $this->sell_date )->flatten(1)->map(function ($item, $key){
 
-                    //  日期不對的過濾掉
-
-                    if ( !isset($this->Stock_data[ $this->buy_date[$key]["data_date"] ]) )
-                    {
-
-                        throw new \Exception( "買進日期比對失敗" );
-                    }
-
-                    if ( !isset($this->Stock_data[ $item["data_date"] ]) )
+                    if ( !isset($this->Stock_data[ $item["stock_id"] ][ $item["data_date"] ]) )
                     {
 
                         throw new \Exception( "賣出日期比對失敗" );
+                    }
+
+                });
+
+                collect( $this->buy_date )->flatten(1)->map(function ($item, $key){
+
+                    if ( !isset($this->Stock_data[ $item["stock_id"] ][ $item["data_date"] ]) )
+                    {
+
+                        throw new \Exception( "買進日期比對失敗" );
                     }
 
                 });
@@ -258,35 +268,37 @@ class BollingerBandsStrategy
     private function format()
     {
 
-        $this->result = collect( $this->sell_date )->filter(function ($item){
+        $this->result = collect( $this->sell_date )->flatten(1)->filter(function ($item) {
+            $stock_id = $item["stock_id"];
             $sell_date = $item["data_date"];
-            return isset($this->Stock_data[$sell_date]) && !empty($this->Stock_data[$sell_date]);
+            return isset($this->Stock_data[$stock_id][$sell_date]) && !empty($this->Stock_data[$stock_id][$sell_date]);
         })->map(function ($item, $key){
 
-            $buy_date = $this->buy_date[$key]["data_date"];
-
+            $stock_id = $item["stock_id"];
+            
+            $buy_date = $this->buy_date[$item["stock_id"]][$key]["data_date"];
             $sell_date = $item["data_date"];
 
-            $buy_fee = ceil( $this->Stock_data[$buy_date] * 1000 * 0.001425 );
-            $sell_fee = ceil( $this->Stock_data[$sell_date] * 1000 * 0.001425 );
-            $tax = ceil( $this->Stock_data[$sell_date] * 1000 * 0.003);
-            $diff = round( $this->Stock_data[$sell_date] - $this->Stock_data[$buy_date], 2 );
+            $buy_fee = ceil( $this->Stock_data[$stock_id][$buy_date] * 1000 * 0.001425 );
+            $sell_fee = ceil( $this->Stock_data[$stock_id][$sell_date] * 1000 * 0.001425 );
+            $tax = ceil( $this->Stock_data[$stock_id][$sell_date] * 1000 * 0.003);
+            $diff = round( $this->Stock_data[$stock_id][$sell_date] - $this->Stock_data[$stock_id][$buy_date], 2 );
 
             return implode(",", [
                 "code"          =>  $this->code,
                 "buy_date"      =>  $buy_date,
-                "buy_percentB"  =>  $this->buy_date[$key]["percentB"],
-                "buy_price"     =>  $this->Stock_data[$buy_date],
+                "buy_percentB"  =>  $this->buy_date[$stock_id][$key]["percentB"],
+                "buy_price"     =>  $this->Stock_data[$stock_id][$buy_date],
                 "buy_fee"       =>  $buy_fee,
                 "sell_date"     =>  $sell_date,
                 "sell_percentB" =>  $item["percentB"],
-                "sell_price"    =>  $this->Stock_data[$sell_date],
+                "sell_price"    =>  $this->Stock_data[$stock_id][$sell_date],
                 "sell_fee"      =>  $sell_fee,
                 "tax"           =>  $tax,
                 "diff"          =>  $diff,
                 "profit"        =>  ceil( ($diff * 1000) - $buy_fee - $sell_fee - $tax ),
-                "sellBuyPercentAtBuy"       =>  isset( $this->sellBuyPercent[ $buy_date ] ) ? $this->sellBuyPercent[ $buy_date ] : 0,
-                "sellBuyPercentAtSell"      =>  isset( $this->sellBuyPercent[ $sell_date ] ) ? $this->sellBuyPercent[ $sell_date ] : 0,
+                "sellBuyPercentAtBuy"       =>  isset( $this->sellBuyPercent[$stock_id][ $buy_date ] ) ? $this->sellBuyPercent[$stock_id][ $buy_date ] : 0,
+                "sellBuyPercentAtSell"      =>  isset( $this->sellBuyPercent[$stock_id][ $sell_date ] ) ? $this->sellBuyPercent[$stock_id][ $sell_date ] : 0,
                 "error"         =>  "Correct"
             ]);
 
@@ -299,7 +311,7 @@ class BollingerBandsStrategy
 
         $this->insert_content = $this->Stock->get_all_stock_info()->filter(function ($item) {
             return $item->code > $this->last_code && !in_array( $item->code, $this->not_read ) ;
-        })->forPage(0, 1)->map(function ($item) {
+        })->forPage($this->page, $this->limit)->map(function ($item) {
 
             try
             {
@@ -335,6 +347,8 @@ class BollingerBandsStrategy
             }
             catch (\Exception $e)
             {
+
+                dd($e);
 
                 return collect( [implode(",", [
                     "code"                      =>  $item->code,

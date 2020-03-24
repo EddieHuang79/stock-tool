@@ -474,6 +474,15 @@ class SellBuyPercent_logic
 
     }
 
+    //  取得買賣壓力資料
+
+    public function get_data_by_year( int $year, array $stock_id )
+    {
+
+        return SellBuyPercent::getInstance()->get_data_by_year( $year, $stock_id );
+
+    }
+
     public function get_data_by_range( $start, $end )
     {
 

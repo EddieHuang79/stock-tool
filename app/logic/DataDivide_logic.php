@@ -95,7 +95,8 @@ class DataDivide_logic
 
     	$startDate = !empty($date) ? $date : $this->start_date;
 
-    	$endDate = Holiday_logic::getInstance()->get_work_date( $after_days = 1, $startDate, $type = 2 );
+    	// $endDate = Holiday_logic::getInstance()->get_work_date( $after_days = 1, $startDate, $type = 2 );
+        $endDate = $startDate;
 
     	$endDate = date("Y", strtotime($startDate)) !== date("Y", strtotime($endDate)) ? $startDate : $endDate;
 

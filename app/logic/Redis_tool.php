@@ -16,6 +16,8 @@ class Redis_tool
     private $divide_stock_key = "divideStockDataDate";
     private $divide_tech_key = "divideTechDate";
     private $divide_sellBuy_key = "divideSellBuyDate";
+    private $fund_excute_key = "fundExcute";
+    private $fund_excute_key2 = "fundExcute2";
 
 
     // 設定當日股票更新清單
@@ -238,6 +240,46 @@ class Redis_tool
     {
 
         return Redis::get( $this->divide_sellBuy_key );
+
+    }
+
+    // 設定劃分key的日期
+
+    public function setFundExcuteKey($date)
+    {
+
+        return Redis::set( $this->fund_excute_key, $date );
+
+    }
+
+    // 取得劃分key的日期
+
+    public function getFundExcuteKey()
+    {
+
+        $date = Redis::get( $this->fund_excute_key );
+
+        return !empty($date) ? $date : mktime( 0, 0, 0, 1, 1, 2016 );
+
+    }
+
+    // 設定劃分key的日期
+
+    public function setFundExcuteKey2($date)
+    {
+
+        return Redis::set( $this->fund_excute_key2, $date );
+
+    }
+
+    // 取得劃分key的日期
+
+    public function getFundExcuteKey2()
+    {
+
+        $date = Redis::get( $this->fund_excute_key2 );
+
+        return !empty($date) ? $date : mktime( 0, 0, 0, 1, 1, 2016 );
 
     }
 

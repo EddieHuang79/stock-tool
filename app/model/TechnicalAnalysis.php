@@ -31,6 +31,16 @@ class TechnicalAnalysis
 
 	}
 
+	public function update_history_data( array $data, int $id, int $year, int $stock_id )
+	{
+
+		$result = DB::table($this->table . '_' . $year)->where("id", $id)->update($data);
+		$result = DB::table($this->table . '_' . $year)->where("stock_id", $stock_id)->where("step", 0)->update(['step' => 4]);
+
+		return $result;
+
+	}
+
 	public function get_data( array $stock_id, string $start, string $end )
 	{
 
@@ -102,6 +112,25 @@ class TechnicalAnalysis
 
 	}
 
+	// 找出要計算的前10支股票代號
+
+	public function get_history_stock_tech_update_date_v2(int $year)
+	{
+
+		$table = $this->table . '_' . $year;
+
+		$result = DB::table( $table )
+					->select(
+						$table . '.stock_id',
+						$table . '.code'
+					)
+					->where( "step", 0 )
+					->groupby( 'code', 'stock_id' )->orderby( $table . '.code' )->limit(170)->get();
+
+		return $result;
+
+	}
+
     public function get_data_by_range( $start, $end, $code )
     {
 
@@ -144,6 +173,36 @@ class TechnicalAnalysis
         return $result;
 
     }
+
+    public function get_data_by_year( int $year, array $stock_id )
+    {
+
+        $result = DB::table($this->table . '_' . $year)
+            ->select(
+                'stock_id',
+                'code',
+                'data_date',
+                'bandwidth',
+                'percentB'
+            )
+            ->whereIn( 'stock_id', $stock_id )
+            ->get();
+
+        return $result;
+
+    }
+
+	public function get_history_data( array $stock_id, int $year )
+	{
+
+		$table = $this->table . '_' . $year;
+
+		return DB::table( $table )
+				->whereIn( $table . '.stock_id', $stock_id )
+				->orderby( $table . '.data_date' )
+				->get();
+
+	}
 
 	// 回傳自己
 

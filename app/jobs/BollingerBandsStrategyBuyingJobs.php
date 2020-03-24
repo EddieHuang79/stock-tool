@@ -46,7 +46,7 @@ class BollingerBandsStrategyBuyingJobs
 
     private $volume_data = [];
 
-    private $rule_avg_volume = 500;
+    private $rule_avg_volume = 3000;
 
     private $rule_avg_volume_days = 10;
 
@@ -55,6 +55,8 @@ class BollingerBandsStrategyBuyingJobs
     private $cnt = 0;
 
     private $now_date;
+
+    private $stock_info;
 
     /*
 
@@ -73,6 +75,8 @@ class BollingerBandsStrategyBuyingJobs
         $this->Tech = TechnicalAnalysis_logic::getInstance();
 
         $this->Stock = Stock_logic::getInstance();
+
+        $this->stock_info = $this->Stock->get_stock_info();
 
         $this->start = $this->now_date;
 
@@ -164,8 +168,7 @@ class BollingerBandsStrategyBuyingJobs
             $this->set_volume( $item->code );
 
             return !empty($item->sellBuyPercent)
-                && $this->volume_data[$item->code] > $this->rule_avg_volume
-                && $item->continue_days < 3;
+                && $this->volume_data[$item->code] > $this->rule_avg_volume;
 
         })->sortBy("sellBuyPercent");
 
@@ -182,12 +185,13 @@ class BollingerBandsStrategyBuyingJobs
         $this->notice_msg[0] .= $this->notice_format( $msg = 'Percent B > ' . $this->rule_percentB ) ;
         $this->notice_msg[0] .= $this->notice_format( $msg = '買賣壓力 < ' . $this->rule_sellBuyPercent ) ;
         $this->notice_msg[0] .= $this->notice_format( $msg = $this->rule_avg_volume_days . '日平均成交量 > ' . $this->rule_avg_volume ) ;
-        $this->notice_msg[0] .= $this->notice_format( $msg = '持續天數 < 3 天') ;
 
         $this->notice_data->map(function ($item){
             $this->notice_msg[$this->page] = isset($this->notice_msg[$this->page]) ? $this->notice_msg[$this->page] : '';
             $this->notice_msg[$this->page] .= $this->notice_format( $msg = '-----' );
             $this->notice_msg[$this->page] .= $this->notice_format( $msg = '股票代號:' . $item->code );
+            $this->notice_msg[$this->page] .= $this->notice_format( $msg = '股票名稱:' . $this->stock_info[$item->code]->name ?? '' );
+            $this->notice_msg[$this->page] .= $this->notice_format( $msg = '股票類別:' . $this->stock_info[$item->code]->category ?? '' );
             $this->notice_msg[$this->page] .= $this->notice_format( $msg = '買賣壓力:' . $item->sellBuyPercent );
             $this->notice_msg[$this->page] .= $this->notice_format( $msg = 'BB%:' . $item->percentB );
             $this->notice_msg[$this->page] .= $this->notice_format( $msg = 'BB%  > ' . $this->rule_percentB . '的持續天數: ' . $item->continue_days ) ;

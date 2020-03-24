@@ -36,7 +36,7 @@ class BollingerBandsStrategyGetAssignStock
     public function __construct()
     {
 
-        $this->code = [2492, 4968, 3680];
+        $this->code = [3044, 2330];
 
         $this->get_stock_id();
 

@@ -410,6 +410,64 @@ class Stock_logic
 
     }
 
+    // 		取得股票資訊
+
+	public function get_stock_info()
+	{
+
+		$data = Stock::getInstance()->get_stock_list();
+
+		$result = collect( $data )->mapWithKeys(function ( $item ) {
+			return [(int)$item->code => $item];
+		})->toArray();
+
+		return $result;
+
+	}
+
+	public function get_stock_data_assign_year(int $year, array $stock_id)
+	{
+
+		return Stock::getInstance()->get_stock_data_assign_year($year, $stock_id)->groupBy('stock_id')->map(function($item) {
+			$item->map(function($item) {
+				$item->data_date = $item->data_date;
+				$item->volume = intval($item->volume);
+				$item->open = floatval($item->open);
+				$item->close = floatval($item->close);
+				$item->highest = floatval($item->highest);
+				$item->lowest = floatval($item->lowest);
+				return $item;
+			});
+			return $item;
+		})->toArray();		
+
+	}
+
+    // 		取得股票資訊
+
+	public function get_stock_info_by_stock_id()
+	{
+
+		return Stock::getInstance()->get_stock_list()->mapWithKeys(function($item) {
+            return [$item->id => [
+                "code" => $item->code,
+                "name" => $item->name,
+            ]];
+        })->toArray();
+
+	}
+
+    // 		取得股票資訊
+
+	public function mapping_code_and_id()
+	{
+
+		return Stock::getInstance()->get_stock_list()->mapWithKeys(function($item) {
+            return [$item->id => $item->code];
+        })->toArray();
+
+	}
+
     public static function getInstance()
     {
 

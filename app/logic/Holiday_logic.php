@@ -9,12 +9,12 @@ class Holiday_logic
 
 	// 取得指定日期之前X日的工作日 or 之後 X日的工作日
 
-	public function get_work_date( $before_days, $now_date, $type = 1 )
+	public function get_work_date( int $before_days, string $now_date, $type = 1 )
 	{
 
 		$result = '';
 
-		if ( !empty($before_days) && is_int($before_days) && !empty($now_date) && !empty($now_date) )
+		if ( !empty($before_days) && is_int($before_days) && !empty($now_date) )
 		{
 
 			$limit = $before_days;
@@ -67,7 +67,7 @@ class Holiday_logic
 
 	//  當日是否為假日
 
-    public function is_holiday( $date )
+    public function is_holiday( int $date )
     {
 
         $result = false;

@@ -14,6 +14,7 @@ use App\logic\Strategy_logic;
 use App\logic\Holiday_logic;
 use Illuminate\Support\Facades\DB;
 use App\jobs\CountTechnicalAnalysis;
+use App\jobs\FixHistoryData;
 use App\jobs\CountSellBuyPercent;
 use App\jobs\AccessCSV;
 use App\jobs\SaveFromCSV;
@@ -31,6 +32,14 @@ use App\Traits\stockFileLib;
 use App\jobs\CrontabCenter;
 use App\jobs\getNotUpdateStock;
 use App\simulation\RSIStrategySimulation;
+use Illuminate\Support\Facades\Storage;
+use App\model\Stock;
+use App\logic\Profit_logic;
+use App\simulation\JackStrategySimulation;
+use App\simulation\JackStrategySimulation1;
+use App\logic\Fund_logic;
+use App\simulation\FindStrategySimulation;
+use App\simulation\BollingerBandsBearsStrategySimulation1;
 
 class StockController extends Controller
 {
@@ -183,37 +192,18 @@ class StockController extends Controller
     public function test_entrance(Request $request)
     {
 
-//        BollingerBandsStrategySimulation11::getInstance()->do();
-
        // CrontabCenter::getInstance()->BollingerSell();
        // CrontabCenter::getInstance()->BollingerBuy();
 
-//        RSIStrategySimulation::getInstance()->do();
+        // AccessCSV::getInstance()->update_daily_data();
 
-        // CrontabCenter::getInstance(1)->BollingerSell();
+        // FindStrategySimulation::getInstance()->do([2016, 2017, 2018]);
 
-        // CrontabCenter::getInstance(1)->auto_save_this_month_file_to_db();
+        BollingerBandsBearsStrategySimulation1::getInstance()->do($page = 1, $limit = 10, $year = 2016);
 
-        // CrontabCenter::getInstance()->create_init_data();
+        // CrontabCenter::getInstance()->save_fund_data_from_text();
 
-        // CrontabCenter::getInstance()->count_all();
-        // CrontabCenter::getInstance()->auto_save_this_month_file_to_db();
-        // CrontabCenter::getInstance()->count_sellBuyPercent();
-        // CrontabCenter::getInstance()->divide_table();
-
-        $startDate = '2017-01-05';
-        $endDate = '2017-01-05';
-
-        $data = DB::table('stock_data')->whereBetween("data_date", [$startDate, $endDate])->get();
-
-        $year = date("Y", strtotime($startDate));
-
-        DB::table("stock_data_" . $year)->insert($data->map(function($item) { 
-            $item = get_object_vars($item); 
-            unset($item["id"]);
-            return $item; 
-        })->toArray());
-              
+        // FixHistoryData::getInstance()->count_tech(2017);
 
         return response( "done" , 200 )->header('Content-Type', 'text/plain');
 

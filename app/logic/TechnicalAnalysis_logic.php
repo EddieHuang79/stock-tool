@@ -85,6 +85,16 @@ class TechnicalAnalysis_logic
 	}
 
 
+	// 		更新資料
+
+	public function update_history_data( array $data, int $id, int $year, int $stock_id )
+	{
+
+		return TechnicalAnalysis::getInstance()->update_history_data( $data, $id, $year, $stock_id );
+
+	}
+
+
 	// 		取得資料
 
 	public function get_data( array $stock_id, string $start, string $end )
@@ -94,6 +104,15 @@ class TechnicalAnalysis_logic
 
 	}
 
+
+	// 		取得歷史資料
+
+	public function get_history_data( array $stock_id, int $year )
+	{
+
+		return TechnicalAnalysis::getInstance()->get_history_data( $stock_id, $year )->groupBy('stock_id');
+
+	}
 
 
 	// 計算交錯信號
@@ -418,6 +437,17 @@ class TechnicalAnalysis_logic
 
     }
 
+
+	//      取得技術指標更新日期
+
+    public function get_history_stock_tech_update_date_v2(int $year)
+    {
+
+        return TechnicalAnalysis::getInstance()->get_history_stock_tech_update_date_v2($year);
+
+    }
+
+
 	//      取得技術指標更新日期
 
     public function get_stock_tech_update_date_v2()
@@ -427,12 +457,25 @@ class TechnicalAnalysis_logic
 
     }
 
+
     public function get_today_percentB( $stock_id = [], $date )
     {
 
         return TechnicalAnalysis::getInstance()->get_today_percentB( $stock_id, $date );
 
     }
+
+	public function get_data_by_year( int $year, array $stock_id ): array
+	{
+
+		return TechnicalAnalysis::getInstance()->get_data_by_year( $year, $stock_id )->groupBy('stock_id')
+			->sortBy('data_date')->map(function($item) {
+				return $item->mapWithKeys(function($item) {
+					return [$item->data_date => $item];
+				});
+			})->toArray();
+
+	}
 
     public static function getInstance()
     {

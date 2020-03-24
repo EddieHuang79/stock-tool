@@ -8,13 +8,14 @@ use App\Traits\stockFileLib;
 use App\logic\Stock_logic;
 use App\logic\Record_logic;
 use App\logic\Redis_tool;
+use App\logic\Holiday_logic;
 
 class AccessCSV
 {
 
     use SchemaFunc, stockFileLib;
 
-    // 		上市網址
+    // 		上市網址 抓股價
 
     private function get_TWSE_listed_url( $date, $code )
     {
@@ -24,7 +25,7 @@ class AccessCSV
     }
 
 
-    // 		上櫃網址
+    // 		上櫃網址 抓股價
     //		$response = Curl::to( $url )->withResponseHeaders()->returnResponseObject()->get(); 破解
 
     private function get_TPEx_listed_url( $date, $code )
@@ -33,6 +34,32 @@ class AccessCSV
         $date = $this->year_change( $date );
 
         return 'https://www.tpex.org.tw/web/stock/aftertrading/daily_trading_info/st43_download.php?l=zh-tw&d=' . $date . '&stkno=' . $code . '&s=[0,asc,0]';
+
+    }
+
+
+    //      上市網址 抓三大法人買賣超
+
+    private function get_TWSE_fund_url( $date )
+    {
+
+        return 'https://www.twse.com.tw/fund/T86?response=csv&date=' . $date . '&selectType=ALLBUT0999';
+
+    }
+
+
+    //      上櫃網址 抓三大法人買賣超
+
+    private function get_TPEx_fund_url( $date )
+    {
+
+        $day = substr($date, 6, 2);
+
+        $date = $this->year_change( $date );
+
+        $date = $date . '/' . $day;
+
+        return 'https://www.tpex.org.tw/web/stock/3insti/daily_trade/3itrade_hedge_result.php?l=zh-tw&se=EW&t=D&d=' . $date . '&_=' . intval(microtime(true) * 1000);
 
     }
 
@@ -147,7 +174,7 @@ class AccessCSV
 
     */
 
-    public function get_stock_file( $code, $start, $end)
+    public function get_stock_file( $code, $start, $end )
     {
 
         try
@@ -193,6 +220,133 @@ class AccessCSV
 
     }
 
+
+    //      取得股票三大法人買賣超資料轉存到文字檔 上市
+
+    public function get_stock_fund_file()
+    {
+
+        try
+        {
+
+            $end = time();
+
+            $start = Redis_tool::getInstance()->getFundExcuteKey();
+
+            $now = $start;
+
+            while ( $now <= $end )
+            {
+
+                $date = date("Ymd", $now);
+
+                $isHoliday = Holiday_logic::getInstance()->is_holiday( $now );
+
+                if ( $isHoliday === false ) 
+                {
+
+                    $url = $this->get_TWSE_fund_url( $date ) ;
+
+                    $data = Curl::to( $url )->get();
+
+                    $this->saveStockFundFile($type = 1, $data, $date);
+
+                    $now += 86400;
+
+                    Redis_tool::getInstance()->setFundExcuteKey( $now );
+
+                    Record_logic::getInstance()->write_operate_log( $action = 'auto_get_fund_data type1', $content = $date );
+
+                    break;
+                    
+                }
+                else
+                {
+
+                    $now += 86400;
+
+                }
+
+            }
+
+
+        }
+        catch (\Exception $e)
+        {
+
+            $this->set_error_msg( $e, $position = 'get_stock_fund_file' );
+
+        }
+
+        return true;
+
+    }
+
+
+    //      取得股票三大法人買賣超資料轉存到文字檔 上櫃
+
+    public function get_stock_fund_file2()
+    {
+
+        try
+        {
+
+            $end = time();
+
+            $start = Redis_tool::getInstance()->getFundExcuteKey2();
+
+            $now = $start;
+
+            while ( $now <= $end )
+            {
+
+                $date = date("Ymd", $now);
+
+                $isHoliday = Holiday_logic::getInstance()->is_holiday( $now );
+
+                if ( $isHoliday === false ) 
+                {
+
+                    $url = $this->get_TPEx_fund_url( $date ) ;
+
+                    $data = Curl::to( $url )->get();
+
+                    $data = json_decode($data, true);
+
+                    $this->saveStockFundFile2($type = 2, $data["aaData"], $date);
+
+                    $now += 86400;
+
+                    Redis_tool::getInstance()->setFundExcuteKey2( $now );
+
+                    Record_logic::getInstance()->write_operate_log( $action = 'auto_get_fund_data type2', $content = $date );
+
+                    break;
+                    
+                }
+                else
+                {
+
+                    $now += 86400;
+
+                }
+
+            }
+
+
+        }
+        catch (\Exception $e)
+        {
+
+            $this->set_error_msg( $e, $position = 'get_stock_fund_file' );
+
+        }
+
+        return true;
+
+    }
+
+
     /*
 
         條件
@@ -209,7 +363,8 @@ class AccessCSV
     public function update_daily_data( $type = 1 )
     {
 
-        $date = time();
+        $timeStamp = time();
+        // $timeStamp = mktime(0,0,0,12,31,2019);
 
         //  刪除清單
 
@@ -225,7 +380,7 @@ class AccessCSV
 
         //  取得已更新清單
 
-        $update_list = $Redis->getUpdateDaily( date("Ymd", $date) );
+        $update_list = $Redis->getUpdateDaily( date("Ymd", $timeStamp) );
 
         $update_list = collect($update_list)->map(function ($item){
             return intval($item);
@@ -242,7 +397,7 @@ class AccessCSV
         foreach ($wait_to_update_stock as $code)
         {
 
-            $date = date("Ym01");
+            $date = date("Ym01", $timeStamp);
 
             $type = isset($code_type_mapping[$code]) ? $code_type_mapping[$code] : 1 ;
 
@@ -254,8 +409,8 @@ class AccessCSV
 
             Record_logic::getInstance()->write_operate_log( $action = 'update_daily_data', $content = $code );
 
-            $Redis->setUpdateDaily( date("Ymd"), (int)$code );
-            $Redis->setUpdateFailProcessDaily( date("Ymd"), (int)$code );
+            $Redis->setUpdateDaily( date("Ymd", $timeStamp), (int)$code );
+            $Redis->setUpdateFailProcessDaily( date("Ymd", $timeStamp), (int)$code );
 
         }
 
@@ -410,6 +565,37 @@ class AccessCSV
             }
 
         }
+
+        return true;
+
+    }
+
+    //      Cron Job 自動取得所有股票三大法人買賣超
+    /*
+
+            區間: 近3年
+            每次: 1份檔案(避免鎖IP)
+            type: 撈資料的區間
+
+    */
+
+    public function auto_get_fund_data()
+    {
+
+        // 上市
+
+        $this->get_stock_fund_file();
+
+        return true;
+
+    }
+
+    public function auto_get_fund_data2()
+    {
+
+        // 上櫃
+
+        $this->get_stock_fund_file2();
 
         return true;
 

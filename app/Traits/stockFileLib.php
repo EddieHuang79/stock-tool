@@ -10,6 +10,8 @@ trait stockFileLib
 
 	private $parents_dir = 'stock';
 
+	private $fund_parents_dir = 'fund';
+
 	private function get_sub_dir()
 	{
 
@@ -243,6 +245,69 @@ trait stockFileLib
 
 	}
 
+
+	// 		轉存股票三大法人檔案 上市
+
+	private function saveStockFundFile( int $type, string $data, string $date )
+	{
+
+		$result = false;
+
+		$year = (int)date("Y", strtotime($date));
+
+		$file_path = $this->fund_parents_dir . '/' . $year . '/' . $type;
+
+		Storage::makeDirectory( $file_path );
+
+		$file_name = $file_path . '/' . $date . '.csv';
+
+		$tmp = explode("\r\n", $data);
+
+		$cnt = count($tmp);
+
+		$data = array_slice( $tmp, 2, $cnt - 12 ) ;
+
+		$new_content = implode("\r\n", $data);
+
+		Storage::put( $file_name , $new_content );
+
+		$result = true;
+
+		return $result;
+
+	}
+
+
+	// 		轉存股票三大法人檔案 上櫃
+
+	private function saveStockFundFile2( int $type, array $data, string $date )
+	{
+
+		$result = false;
+
+		$year = (int)date("Y", strtotime($date));
+
+		$file_path = $this->fund_parents_dir . '/' . $year . '/' . $type . '/';
+
+		Storage::makeDirectory( $file_path );
+
+		$file_name = $file_path . '/' . $date . '.csv';
+
+		$new_content = collect($data)->map(function($item) {
+			for ($i=2; $i <= 15; $i++) { 
+				$item[$i] = str_replace(",", "", $item[$i]);
+				$item[$i] = intval($item[$i]);
+			}
+			return implode(",", $item);
+		})->implode("\r\n");
+
+		Storage::put( $file_name , $new_content );
+
+		$result = true;
+
+		return $result;
+
+	}
 
 }
 

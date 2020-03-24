@@ -33,21 +33,27 @@ class Kernel extends ConsoleKernel
 
        // 策略模擬
 
-       // $schedule->call(function () {
+       $schedule->call(function () {
 
-       //     CrontabCenter::getInstance()->simulation();
+           CrontabCenter::getInstance()->fix_history_data(2017);
 
-       // })->cron("* 17-18,11-14 * * *");
+       })->cron("*/5 1 * * *");
+
+      $schedule->call(function () {
+
+           CrontabCenter::getInstance()->fix_history_data(2018);
+
+       })->cron("*/5 2 * * *");
 
        // 資料切分 
 
-       $schedule->call(function () {
+       // $schedule->call(function () {
 
-           CrontabCenter::getInstance()->divide_stock_table();
+           // CrontabCenter::getInstance()->divide_stock_table();
            // CrontabCenter::getInstance()->divide_tech_table();
            // CrontabCenter::getInstance()->divide_sell_buy_table();
 
-       })->cron("* 12-15,18 * * *");
+       // })->cron("* 11,12 * * *");
 
         //  取得假日設定
 
@@ -133,6 +139,19 @@ class Kernel extends ConsoleKernel
             CrontabCenter::getInstance()->BollingerSell();
 
         })->cron("52 17 * * 1-5");
+
+        $schedule->call(function () {
+
+           CrontabCenter::getInstance()->auto_get_fund_data();
+           CrontabCenter::getInstance()->auto_get_fund_data2();
+
+        })->cron("54 17 * * 1-5");
+
+        $schedule->call(function () {
+
+           CrontabCenter::getInstance()->save_fund_data_from_text();
+
+        })->cron("56 17 * * 1-5");
 
         // 自動建立空白檔案
 

@@ -5,6 +5,7 @@ namespace App\jobs;
 use App\query\updateNoDataStock;
 use App\simulation\RSIStrategySimulation;
 use App\logic\DataDivide_logic;
+use App\jobs\FixHistoryData;
 
 class CrontabCenter
 {
@@ -271,6 +272,34 @@ class CrontabCenter
 		sleep(5);
 
 		DataDivide_logic::getInstance()->divide_sellBuyPercent_data();
+		
+	}
+
+	public function auto_get_fund_data()
+	{
+
+		AccessCSV::getInstance()->auto_get_fund_data();
+		
+	}
+
+	public function auto_get_fund_data2()
+	{
+
+		AccessCSV::getInstance()->auto_get_fund_data2();
+		
+	}
+
+	public function save_fund_data_from_text()
+	{
+
+		SaveFromCSV::getInstance()->save_fund_data_from_text();
+		
+	}
+
+	public function fix_history_data(int $year)
+	{
+
+		FixHistoryData::getInstance()->count_tech($year);
 		
 	}
 

@@ -203,6 +203,29 @@ class Stock
 
     }
 
+    public function get_stock_data_assign_year(int $year, array $stock_id)
+    {
+
+        $result = DB::table($this->data_table . '_' . $year)
+            ->select(
+				'id',
+				'stock_id',
+				'data_date',
+				'volume',
+				'open',
+				'highest',
+				'lowest',
+				'close'
+            )
+            ->whereIn( 'stock_id', $stock_id )
+            ->orderBy( 'stock_id' )
+            ->orderBy( 'data_date' )
+            ->get();
+
+        return $result;
+
+    }
+
     public static function getInstance()
     {
 

@@ -6,6 +6,7 @@ use App\Traits\stockFileLib;
 use Illuminate\Support\Facades\Storage;
 use App\logic\Record_logic;
 use App\logic\Stock_logic;
+use App\logic\Fund_logic;
 
 class SaveFromCSV
 {
@@ -222,6 +223,17 @@ class SaveFromCSV
         return true;
 
     }
+
+
+    // 轉存三大法人資料
+
+    public function save_fund_data_from_text()
+    {
+
+        Fund_logic::getInstance()->save_from_file((int)date("Y"));
+        
+    }
+
 
     public static function getInstance()
     {

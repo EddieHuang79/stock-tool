@@ -89,6 +89,17 @@ class SellBuyPercent
 
     }
 
+    public function get_data_by_year( int $year, array $stock_id )
+    {
+
+    	$table = $this->table . '_' . $year;
+
+        $result = DB::table($table)->whereIn( "stock_id", $stock_id )->get();
+
+        return $result;
+
+    }
+
     public function get_data_by_range( $start, $end )
     {
 
