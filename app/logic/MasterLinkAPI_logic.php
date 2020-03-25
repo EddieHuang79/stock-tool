@@ -6,189 +6,168 @@ use Ixudra\Curl\Facades\Curl;
 
 class MasterLinkAPI_logic
 {
+    /*
 
-	/*
+        功能: 刪單
 
-		功能: 登入
-		回傳編碼: big5
-		目的: 取得驗證碼
+    */
 
-	*/
+    /*
 
-	private function login()
-	{
+        流程
 
-		$result = [
-			"status" 	=> '',
-			"code" 		=> '',
-			"msg" 		=> ''
-		];
+    */
 
-		$loginURL = env( 'loginURL' );
+    public static function process()
+    {
+        $_this = new self();
 
-		$loginID = 'groupid=' . env( 'loginID' );
+        try {
+            // 取得登入驗證碼
 
-		$loginPassword = 'password=' . md5( env( 'loginPassword' ) );
+            // $login_data = $_this->login();
 
-		$url = $loginURL . '?' . $loginID . '&' . $loginPassword;
+            // if ( $login_data["status"] === false ) {
 
-		$response = Curl::to( $url )->get();
+            // 	throw new \Exception($login_data["msg"]);
 
-		$response = iconv("BIG5", "UTF-8", trim($response) );
+            // }
 
-		$tmp = explode("|", $response);
+            // $verify_code = $login_data["msg"];
 
-		$result = [
-			"status"	=> $tmp[1] === '000',
-			"code" 		=> $tmp[1],
-			"msg" 		=> $tmp[2]
-		];
+            $_this->order($verify_code = '123456');
 
-		return $result;
+            dd($verify_code);
+        } catch (\Exception $e) {
+            Record_logic::getInstance()->write_error_log($action = 'process', $e->getMessage());
+        }
+    }
 
-	}
+    /*
 
-	/*
+        功能: 登入
+        回傳編碼: big5
+        目的: 取得驗證碼
 
-		功能: 加簽
+    */
 
-	*/
+    private function login()
+    {
+        $result = [
+            'status' => '',
+            'code' => '',
+            'msg' => '',
+        ];
 
-	/*
+        $loginURL = env('loginURL');
 
-		功能: 下單
+        $loginID = 'groupid='.env('loginID');
 
-		stock_id=股票代碼
-		tradeKind=交易別0:現股,3:融資,4:融券
-		buysell=買賣別B:買進,S:賣出
-		quantity=數量
-		price=價格
-		BrokerID=分公司
-		Account=帳號
-		password=授權碼
-		LoginID=trade帳號
-		channel=單源
-		IP_TEL=IP
-		priceLH=漲跌停,限價0:限價,L:跌停價,H:漲停價
+        $loginPassword = 'password='.md5(env('loginPassword'));
 
-		待解決:
-			1.	加簽
-			2.	URL
+        $url = $loginURL.'?'.$loginID.'&'.$loginPassword;
 
-		@	https://www.php.net/manual/en/function.openssl-pkcs7-sign.php
-		@	https://www.php.net/manual/en/function.openssl-pkcs7-encrypt.php
-		@	https://www.php.net/manual/en/openssl.certparams.php
+        $response = Curl::to($url)->get();
 
-	*/
+        $response = iconv('BIG5', 'UTF-8', trim($response));
 
-	private function order( $verify_code = '' )
-	{
+        $tmp = explode('|', $response);
 
-		$result = [
-			"code" 	=> '',
-			"msg" 	=> ''
-		];
+        $result = [
+            'status' => $tmp[1] === '000',
+            'code' => $tmp[1],
+            'msg' => $tmp[2],
+        ];
 
-		// 產生CA
+        return $result;
+    }
 
-		$ca = [
-			'',
-			'stock_id=1101',
-			'tradeKind=0',
-			'buysell=B',
-			'quantity=1',
-			'price=10',
-			'BrokerID=' . env( "broker" ),
-			'Account=' . env( "account" ),
-			'password=' . $verify_code,
-			'LoginID=' . env( "loginID" ),
-			'channel=' . env( "channel" ),
-			'IP_Tel=' . env( "ip_tel" ),
-			'priceLH=0',
-			'',
-		];
+    /*
 
-		// 產生ACA
+        功能: 加簽
 
-		$aca = [
-			'',
-			'iFix',
-			'A0006',
-			'000',
-			'0001',
-			implode("|", $CA), // 要加簽
-		];
+    */
 
-		dd( implode("|", $data) );
+    /*
 
+        功能: 下單
 
-		$url = $loginURL . '?' . $loginID . '&' . $loginPassword;
+        stock_id=股票代碼
+        tradeKind=交易別0:現股,3:融資,4:融券
+        buysell=買賣別B:買進,S:賣出
+        quantity=數量
+        price=價格
+        BrokerID=分公司
+        Account=帳號
+        password=授權碼
+        LoginID=trade帳號
+        channel=單源
+        IP_TEL=IP
+        priceLH=漲跌停,限價0:限價,L:跌停價,H:漲停價
 
-		$response = Curl::to( $url )->get();
+        待解決:
+            1.	加簽
+            2.	URL
 
-		$response = iconv("BIG5", "UTF-8", trim($response) );
+        @	https://www.php.net/manual/en/function.openssl-pkcs7-sign.php
+        @	https://www.php.net/manual/en/function.openssl-pkcs7-encrypt.php
+        @	https://www.php.net/manual/en/openssl.certparams.php
 
-		$tmp = explode("|", $response);
+    */
 
-		$result = [
-			"status"	=> $tmp[1] === '000',
-			"code" 		=> $tmp[1],
-			"msg" 		=> $tmp[2]
-		];
+    private function order($verify_code = '')
+    {
+        $result = [
+            'code' => '',
+            'msg' => '',
+        ];
 
-		return $result;
+        // 產生CA
 
-	}
+        $ca = [
+            '',
+            'stock_id=1101',
+            'tradeKind=0',
+            'buysell=B',
+            'quantity=1',
+            'price=10',
+            'BrokerID='.env('broker'),
+            'Account='.env('account'),
+            'password='.$verify_code,
+            'LoginID='.env('loginID'),
+            'channel='.env('channel'),
+            'IP_Tel='.env('ip_tel'),
+            'priceLH=0',
+            '',
+        ];
 
-	/*
+        // 產生ACA
 
-		功能: 刪單
+        $aca = [
+            '',
+            'iFix',
+            'A0006',
+            '000',
+            '0001',
+            implode('|', $CA), // 要加簽
+        ];
 
-	*/
+        dd(implode('|', $data));
 
-	/*
+        $url = $loginURL.'?'.$loginID.'&'.$loginPassword;
 
-		流程
+        $response = Curl::to($url)->get();
 
-	*/
+        $response = iconv('BIG5', 'UTF-8', trim($response));
 
-	public static function process()
-	{
+        $tmp = explode('|', $response);
 
-		$_this = new self();
+        $result = [
+            'status' => $tmp[1] === '000',
+            'code' => $tmp[1],
+            'msg' => $tmp[2],
+        ];
 
-		try {
-
-			// 取得登入驗證碼
-
-			// $login_data = $_this->login();
-
-			// if ( $login_data["status"] === false ) {
-
-			// 	throw new \Exception($login_data["msg"]);
-
-			// }
-
-			// $verify_code = $login_data["msg"];
-
-			$_this->order( $verify_code = '123456' );
-
-			dd($verify_code);
-
-		}
-		catch (\Exception $e) {
-
-			Record_logic::getInstance()->write_error_log( $action = 'process', $e->getMessage() );
-
-		}
-
-	}
-
+        return $result;
+    }
 }
-
-
-
-
-
-
-

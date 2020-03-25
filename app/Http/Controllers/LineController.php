@@ -8,28 +8,21 @@ use Illuminate\Http\Request;
 
 class LineController extends Controller
 {
+    public function index(Request $request)
+    {
+        Record_logic::getInstance()->write_operate_log($action = 'Line', $content = $request);
 
-	public function index(Request $request)
-	{
+        return response('done', 200)->header('Content-Type', 'text/plain');
+    }
 
-		Record_logic::getInstance()->write_operate_log( $action = "Line", $content = $request );
+    public function indexPost(Request $request)
+    {
+        $data = $request->getContent();
 
-		return response( "done" , 200 )->header('Content-Type', 'text/plain');
+        Line_logic::getInstance()->receive_message($data);
 
-	}
+        Record_logic::getInstance()->write_operate_log($action = 'Line', $content = $data);
 
-	public function indexPost(Request $request)
-	{
-
-		$data = $request->getContent();
-
-        Line_logic::getInstance()->receive_message( $data );
-
-		Record_logic::getInstance()->write_operate_log( $action = "Line", $content = $data );
-
-		return response( "done" , 200 )->header('Content-Type', 'text/plain');
-
-	}
-
+        return response('done', 200)->header('Content-Type', 'text/plain');
+    }
 }
-

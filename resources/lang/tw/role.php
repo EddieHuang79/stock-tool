@@ -1,7 +1,6 @@
 <?php
 
 return [
-
     'action_name' => '群組權限設定',
     'name' => '群組名稱',
     'status' => '狀態',
@@ -13,5 +12,4 @@ return [
     'create_success' => '群組新增成功！',
     'edit_success' => '群組修改成功！',
     'auth_error' => '權限不足！',
-
 ];

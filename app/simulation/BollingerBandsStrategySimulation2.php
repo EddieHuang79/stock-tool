@@ -14,62 +14,44 @@ use App\abstracts\BollingerBandsStrategy;
     2.  sellBuyPercent > 0.8
 */
 
-
 class BollingerBandsStrategySimulation2 extends BollingerBandsStrategy
 {
+    public function do()
+    {
+        $this->set_file_name('Strategy/BollingerBandsStrategySimulation2.txt');
+
+        $this->set_log_title('BollingerBandsStrategySimulation2');
+
+        $this->count();
+
+        return true;
+    }
+
+    public static function getInstance()
+    {
+        return new self();
+    }
 
     // 交易策略
 
     protected function setTradeDate()
     {
-
         $has_stock = false;
 
-        foreach ($this->Tech_data as $row )
-        {
+        foreach ($this->Tech_data as $row) {
+            $sellBuyPercent = isset($this->sellBuyPercent[$row['data_date']]) ? $this->sellBuyPercent[$row['data_date']] : 0;
 
-            $sellBuyPercent = isset($this->sellBuyPercent[$row["data_date"]]) ? $this->sellBuyPercent[$row["data_date"]] : 0 ;
-
-            if ( $row["percentB"] >= 0.8 && !empty($sellBuyPercent) && $sellBuyPercent <= 0.8 && $has_stock === false )
-            {
-
+            if ($row['percentB'] >= 0.8 && !empty($sellBuyPercent) && $sellBuyPercent <= 0.8 && $has_stock === false) {
                 $has_stock = true;
 
                 $this->buy_date[] = $row;
-
             }
 
-            if ( $has_stock === true && $row["percentB"] < 0.8 && $sellBuyPercent > 0.8 )
-            {
-
+            if ($has_stock === true && $row['percentB'] < 0.8 && $sellBuyPercent > 0.8) {
                 $has_stock = false;
 
                 $this->sell_date[] = $row;
-
             }
-
         }
-
     }
-
-    public function do()
-    {
-
-        $this->set_file_name( "Strategy/BollingerBandsStrategySimulation2.txt" );
-
-        $this->set_log_title( "BollingerBandsStrategySimulation2" );
-
-        $this->count();
-
-        return true;
-
-    }
-
-    public static function getInstance()
-    {
-
-        return new self;
-
-    }
-
 }

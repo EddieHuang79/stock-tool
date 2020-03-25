@@ -1,27 +1,22 @@
 <?php
 
-use Illuminate\Support\Facades\Schema;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class Fund extends Migration
 {
-
     private $stock_info_table = 'stock_info';
     private $table = 'fund';
     private $start_year = 2016;
 
     /**
      * Run the migrations.
-     *
-     * @return void
      */
     public function up()
     {
-        if (!Schema::hasTable($this->table)) 
-        {
-            
+        if (!Schema::hasTable($this->table)) {
             Schema::create($this->table, function (Blueprint $table) {
                 $table->increments('id');
                 $table->integer('code');
@@ -40,20 +35,15 @@ class Fund extends Migration
                 $table->timestamps();
             });
 
-            Schema::table($this->table, function($table) {
-               $table->foreign('stock_id')->references('id')->on($this->stock_info_table);
+            Schema::table($this->table, function ($table) {
+                $table->foreign('stock_id')->references('id')->on($this->stock_info_table);
             });
-
         }
 
-        for ($i=$this->start_year; $i <= date("Y"); $i++) 
-        { 
+        for ($i = $this->start_year; $i <= date('Y'); ++$i) {
+            $table = $this->table.'_'.$i;
 
-            $table = $this->table . '_' . $i;
-
-            if (!Schema::hasTable($table)) 
-            {
-
+            if (!Schema::hasTable($table)) {
                 Schema::create($table, function (Blueprint $table) {
                     $table->increments('id');
                     $table->integer('code');
@@ -72,12 +62,10 @@ class Fund extends Migration
                     $table->timestamps();
                 });
 
-                Schema::table($table, function($table) {
-                   $table->foreign('stock_id')->references('id')->on($this->stock_info_table);
+                Schema::table($table, function ($table) {
+                    $table->foreign('stock_id')->references('id')->on($this->stock_info_table);
                 });
-                
             }
-
         }
 
         // $stockInfo = Stock::getInstance()->get_stock_list()->mapWithKeys(function($item) {
@@ -87,16 +75,16 @@ class Fund extends Migration
         // $startYear = 2013;
         // $range = ['150_', '20_150', '1-19'];
 
-        // for ($year=$startYear; $year <= date("Y"); $year++) 
-        // { 
+        // for ($year=$startYear; $year <= date("Y"); $year++)
+        // {
 
         //     $table = $this->table . '_' . $year;
 
-        //     foreach ($range as $item) 
+        //     foreach ($range as $item)
         //     {
         //         $fileName = $year . '-' . $item . '.csv';
 
-        //         if(Storage::exists( 'profit_year/' . $fileName )) 
+        //         if(Storage::exists( 'profit_year/' . $fileName ))
         //         {
 
         //             $file = Storage::get('profit_year/' . $fileName);
@@ -109,7 +97,7 @@ class Fund extends Migration
         //                 $data = explode(",", str_replace('"', '', $item));
         //                 return isset($stockInfo[$data[0]]) && $data[5] !== '';
         //             })->map(function($item) use($stockInfo, $year) {
-        //                 $data = explode(",", str_replace('"', '', $item));                         
+        //                 $data = explode(",", str_replace('"', '', $item));
         //                 $year = substr($year, 2);
         //                 return [
         //                     'stock_id' => $stockInfo[$data[0]],
@@ -140,27 +128,19 @@ class Fund extends Migration
         //         }
         //     }
         // }
-
     }
 
     /**
      * Reverse the migrations.
-     *
-     * @return void
      */
     public function down()
     {
+        for ($i = $this->start_year; $i < date('Y'); ++$i) {
+            $table = $this->table.'_'.$i;
 
-        for ($i=$this->start_year; $i < date("Y"); $i++) 
-        {
-
-            $table = $this->table . '_' . $i; 
-
-            Schema::dropIfExists( $table );
-
+            Schema::dropIfExists($table);
         }
 
-        Schema::dropIfExists( $this->table );
-
+        Schema::dropIfExists($this->table);
     }
 }

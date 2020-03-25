@@ -4,50 +4,39 @@ namespace App\logic;
 
 class Notice_logic
 {
+    public function noticeUser($type, $msg, $onlyAdmin = false)
+    {
+        if (!empty($type) && \is_int($type) && \strlen($msg) > 0) {
+            switch ($type) {
+                // FB
 
-	public function noticeUser( $type, $msg, $onlyAdmin = false )
-	{
+                case 1:
 
-		if ( !empty($type) && is_int($type) && strlen($msg) > 0 )
-		{
+                    $reply_data = [
+                        'message' => $msg,
+                        'PSID' => '2363717870345037',
+                        'msg_type' => 'text',
+                    ];
 
-			switch ($type)
-			{
+                    FB_logic::getInstance()->send_message($reply_data);
 
-				// FB
+                    break;
+                // Line
 
-				case 1:
+                case 2:
 
-					$reply_data = [
-						"message"		=>	$msg,
-						"PSID"			=>	'2363717870345037',
-						"msg_type"		=>	'text'
-					];
+                    $Line = Line_logic::getInstance();
 
-					FB_logic::getInstance()->send_message( $reply_data );
+                    $user_id = $Line->get_user_id_list();
 
-					break;
+                    $user_id = $onlyAdmin === true ? ['U1f4fa85618159c967669af63259916ba'] : $user_id;
 
-				// Line
+                    $Line->multicast_message($user_id, $msg);
 
-				case 2:
+                    break;
+            }
+        }
 
-				    $Line = Line_logic::getInstance();
-
-					$user_id = $Line->get_user_id_list();
-
-					$user_id = $onlyAdmin === true ? ["U1f4fa85618159c967669af63259916ba"] : $user_id;
-
-                    $Line->multicast_message( $user_id, $msg );
-
-					break;
-
-			}
-
-		}
-
-		return true;
-
-	}
-
+        return true;
+    }
 }

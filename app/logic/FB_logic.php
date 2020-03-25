@@ -7,53 +7,43 @@ use Ixudra\Curl\Facades\Curl;
 
 class FB_logic
 {
+    use SchemaFunc;
 
-	use SchemaFunc;
+    // send message
 
-	// send message
+    public function send_message($data)
+    {
+        $result = false;
 
-	public function send_message( $data )
-	{
+        if (!empty($data) && \is_array($data)) {
+            // send to FB
 
-		$result = false;
+            $getEventsUrl = env('FB_URL').env('FB_TOKEN');
 
-		if ( !empty($data) && is_array($data) )
-		{
+            $queryParams = [
+                'messaging_type' => 'RESPONSE',
+                'recipient' => ['id' => $data['PSID']],
+                'message' => ['text' => $data['message'], 'metadata' => 'send by my api'.date('Ymd His')],
+            ];
 
-			// send to FB
+            Record_logic::getInstance()->write_operate_log('send_message INPUT', $getEventsUrl);
 
-			$getEventsUrl = env('FB_URL') . env('FB_TOKEN');
+            $api_result = Curl::to($getEventsUrl)
+            ->withContentType('application/json')
+            ->withData($queryParams)
+            ->asJson()
+            ->post();
 
-			$queryParams = array(
-				'messaging_type'          => "RESPONSE",
-				'recipient'           	  => ["id" 		=> $data["PSID"]],
-				'message'           	  => ["text" 	=> $data["message"], "metadata" => 'send by my api' . date("Ymd His")]
-			);
+            Record_logic::getInstance()->write_operate_log('send_message OUTPUT', $api_result);
 
-			Record_logic::getInstance()->write_operate_log( 'send_message INPUT', $getEventsUrl );
+            $result = true;
+        }
 
-			$api_result = Curl::to( $getEventsUrl )
-			->withContentType('application/json')
-			->withData( $queryParams )
-			->asJson()
-			->post();
-
-			Record_logic::getInstance()->write_operate_log( 'send_message OUTPUT', $api_result );
-
-			$result = true;
-
-		}
-
-		return $result;
-
-	}
+        return $result;
+    }
 
     public static function getInstance()
     {
-
-        return new self;
-
+        return new self();
     }
-
-
 }

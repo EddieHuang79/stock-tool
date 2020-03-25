@@ -2,181 +2,140 @@
 
 namespace App\jobs;
 
+use App\logic\DataDivide_logic;
 use App\query\updateNoDataStock;
 use App\simulation\RSIStrategySimulation;
-use App\logic\DataDivide_logic;
-use App\jobs\FixHistoryData;
 
 class CrontabCenter
 {
+    private $date;
 
-	private $date;
+    //	自動取得股價
 
-	//	自動取得股價
+    public function update_daily_data()
+    {
+        $AccessCSV = AccessCSV::getInstance();
 
-	public function update_daily_data()
-	{
+        $AccessCSV->update_daily_data(1);
 
-		$AccessCSV = AccessCSV::getInstance();
+        $AccessCSV->update_daily_data(2);
 
-		$AccessCSV->update_daily_data( 1 );
+        $AccessCSV->update_daily_data(3);
 
-		$AccessCSV->update_daily_data( 2 );
+        $AccessCSV->update_daily_data(4);
 
-		$AccessCSV->update_daily_data( 3 );
+        $AccessCSV->update_daily_data(5);
 
-		$AccessCSV->update_daily_data( 4 );
+        $AccessCSV->update_daily_data(6);
 
-		$AccessCSV->update_daily_data( 5 );
+        $AccessCSV->update_daily_data(7);
 
-		$AccessCSV->update_daily_data( 6 );
+        $AccessCSV->update_daily_data(8);
 
-		$AccessCSV->update_daily_data( 7 );
+        $AccessCSV->update_daily_data(9);
 
-		$AccessCSV->update_daily_data( 8 );
+        $AccessCSV->update_daily_data(10);
 
-		$AccessCSV->update_daily_data( 9 );
+        $AccessCSV->update_daily_data(11);
 
-		$AccessCSV->update_daily_data( 10 );
+        $AccessCSV->update_daily_data(12);
+    }
 
-		$AccessCSV->update_daily_data( 11 );
+    // 轉存基本股價資料
 
-		$AccessCSV->update_daily_data( 12 );
+    public function auto_save_this_month_file_to_db()
+    {
+        SaveFromCSV::getInstance()->auto_save_this_month_file_to_db($this->date);
 
-	}
+        sleep(3);
 
+        updateNoDataStock::getInstance()->update();
+    }
 
-	// 轉存基本股價資料
+    //	自動建立技術指標初始資料
 
-	public function auto_save_this_month_file_to_db()
-	{
+    public function create_init_data()
+    {
+        SyncFromStockData::getInstance()->create_init_data();
+    }
 
-		SaveFromCSV::getInstance()->auto_save_this_month_file_to_db( $this->date );
+    //	KD
 
-		sleep(3);
+    public function count_KD()
+    {
+        CountTechnicalAnalysis::getInstance()->auto_count_technical_analysis(1);
+    }
 
-		updateNoDataStock::getInstance()->update();
+    //	RSI
 
-	}
+    public function count_RSI()
+    {
+        CountTechnicalAnalysis::getInstance()->auto_count_technical_analysis(2);
+    }
 
+    //	MACD
 
-	//	自動建立技術指標初始資料
+    public function count_MACD()
+    {
+        CountTechnicalAnalysis::getInstance()->auto_count_technical_analysis(3);
+    }
 
-	public function create_init_data()
-	{
+    //	布林
 
-		SyncFromStockData::getInstance()->create_init_data();
+    public function count_Bollinger()
+    {
+        CountTechnicalAnalysis::getInstance()->auto_count_technical_analysis(4);
+    }
 
-	}
+    //	買賣壓力
 
+    public function count_sellBuyPercent()
+    {
+        CountSellBuyPercent::getInstance()->auto_count_SellBuyPercent($this->date);
+    }
 
-	//	KD
+    // 	布林買進
 
-	public function count_KD()
-	{
+    public function BollingerBuy()
+    {
+        BollingerBandsStrategyBuyingJobs::getInstance()->count($this->date);
+    }
 
-		CountTechnicalAnalysis::getInstance()->auto_count_technical_analysis( 1 );
+    // 	布林賣出
 
-	}
+    public function BollingerSell()
+    {
+        // BollingerBandsStrategySellingJobs::getInstance()->count();
+        BollingerBandsStrategyGetAssignStock::getInstance()->count($this->date);
+    }
 
+    //	建立空白檔案
 
-	//	RSI
+    public function create_empty_file()
+    {
+        CreateInitFile::getInstance()->create_init_file();
+    }
 
-	public function count_RSI()
-	{
+    //	更新失敗通知
 
-		CountTechnicalAnalysis::getInstance()->auto_count_technical_analysis( 2 );
+    public function update_fail_notice()
+    {
+        getNotUpdateStock::getInstance()->process($this->date);
+    }
 
-	}
+    //	重新取得沒拿到的
 
+    public function update_fail_daily_data()
+    {
+        $AccessCSV = AccessCSV::getInstance();
 
-	//	MACD
-
-	public function count_MACD()
-	{
-
-		CountTechnicalAnalysis::getInstance()->auto_count_technical_analysis( 3 );
-
-	}
-
-
-	//	布林
-
-	public function count_Bollinger()
-	{
-
-		CountTechnicalAnalysis::getInstance()->auto_count_technical_analysis( 4 );
-
-	}
-
-
-	//	買賣壓力
-
-	public function count_sellBuyPercent()
-	{
-
-		CountSellBuyPercent::getInstance()->auto_count_SellBuyPercent( $this->date );
-
-	}
-
-
-	// 	布林買進
-
-	public function BollingerBuy()
-	{
-
-		BollingerBandsStrategyBuyingJobs::getInstance()->count( $this->date );
-
-	}
-
-
-	// 	布林賣出
-
-	public function BollingerSell()
-	{
-
-		// BollingerBandsStrategySellingJobs::getInstance()->count();
-		BollingerBandsStrategyGetAssignStock::getInstance()->count( $this->date );
-
-	}
-
-
-	//	建立空白檔案
-
-	public function create_empty_file()
-	{
-
-		CreateInitFile::getInstance()->create_init_file();
-
-	}
-
-
-	//	更新失敗通知
-
-	public function update_fail_notice()
-	{
-
-		getNotUpdateStock::getInstance()->process( $this->date );
-
-	}
-
-
-	//	重新取得沒拿到的
-
-	public function update_fail_daily_data()
-	{
-
-		$AccessCSV = AccessCSV::getInstance();
-
-		$AccessCSV->update_fail_daily_data( $this->date );
-
-	}
+        $AccessCSV->update_fail_daily_data($this->date);
+    }
 
     //	策略模擬
 
     public function simulation()
     {
-
         $RSIStrategySimulation = RSIStrategySimulation::getInstance();
 
         $RSIStrategySimulation->do();
@@ -192,125 +151,106 @@ class CrontabCenter
         sleep(10);
 
         $RSIStrategySimulation->do();
-
     }
 
     // 一次算4種指標
 
-	public function count_all()
-	{
-
-		CountTechnicalAnalysis::getInstance()->count_all();
-
-	}
+    public function count_all()
+    {
+        CountTechnicalAnalysis::getInstance()->count_all();
+    }
 
     // 切分資料庫
 
-	public function divide_stock_table()
-	{
+    public function divide_stock_table()
+    {
+        DataDivide_logic::getInstance()->divide_stock_data();
 
-		DataDivide_logic::getInstance()->divide_stock_data();
+        sleep(5);
 
-		sleep(5);
+        DataDivide_logic::getInstance()->divide_stock_data();
 
-		DataDivide_logic::getInstance()->divide_stock_data();
+        sleep(5);
 
-		sleep(5);
+        DataDivide_logic::getInstance()->divide_stock_data();
 
-		DataDivide_logic::getInstance()->divide_stock_data();
+        sleep(5);
 
-		sleep(5);
+        DataDivide_logic::getInstance()->divide_stock_data();
 
-		DataDivide_logic::getInstance()->divide_stock_data();
+        sleep(5);
 
-		sleep(5);
+        DataDivide_logic::getInstance()->divide_stock_data();
+    }
 
-		DataDivide_logic::getInstance()->divide_stock_data();
+    public function divide_tech_table()
+    {
+        DataDivide_logic::getInstance()->divide_technical_data();
 
-	}
+        sleep(5);
 
-	public function divide_tech_table()
-	{
+        DataDivide_logic::getInstance()->divide_technical_data();
 
-		DataDivide_logic::getInstance()->divide_technical_data();
+        sleep(5);
 
-		sleep(5);
+        DataDivide_logic::getInstance()->divide_technical_data();
 
-		DataDivide_logic::getInstance()->divide_technical_data();
+        sleep(5);
 
-		sleep(5);
+        DataDivide_logic::getInstance()->divide_technical_data();
 
-		DataDivide_logic::getInstance()->divide_technical_data();
+        sleep(5);
 
-		sleep(5);
+        DataDivide_logic::getInstance()->divide_technical_data();
+    }
 
-		DataDivide_logic::getInstance()->divide_technical_data();
+    public function divide_sell_buy_table()
+    {
+        DataDivide_logic::getInstance()->divide_sellBuyPercent_data();
 
-		sleep(5);
+        sleep(5);
 
-		DataDivide_logic::getInstance()->divide_technical_data();
-		
-	}
+        DataDivide_logic::getInstance()->divide_sellBuyPercent_data();
 
-	public function divide_sell_buy_table()
-	{
+        sleep(5);
 
-		DataDivide_logic::getInstance()->divide_sellBuyPercent_data();
+        DataDivide_logic::getInstance()->divide_sellBuyPercent_data();
 
-		sleep(5);
+        sleep(5);
 
-		DataDivide_logic::getInstance()->divide_sellBuyPercent_data();
+        DataDivide_logic::getInstance()->divide_sellBuyPercent_data();
 
-		sleep(5);
+        sleep(5);
 
-		DataDivide_logic::getInstance()->divide_sellBuyPercent_data();
+        DataDivide_logic::getInstance()->divide_sellBuyPercent_data();
+    }
 
-		sleep(5);
+    public function auto_get_fund_data()
+    {
+        AccessCSV::getInstance()->auto_get_fund_data();
+    }
 
-		DataDivide_logic::getInstance()->divide_sellBuyPercent_data();
+    public function auto_get_fund_data2()
+    {
+        AccessCSV::getInstance()->auto_get_fund_data2();
+    }
 
-		sleep(5);
+    public function save_fund_data_from_text()
+    {
+        SaveFromCSV::getInstance()->save_fund_data_from_text();
+    }
 
-		DataDivide_logic::getInstance()->divide_sellBuyPercent_data();
-		
-	}
+    public function fix_history_data(int $year)
+    {
+        FixHistoryData::getInstance()->count_tech($year);
+    }
 
-	public function auto_get_fund_data()
-	{
+    public static function getInstance($days = 0)
+    {
+        $_this = new self();
 
-		AccessCSV::getInstance()->auto_get_fund_data();
-		
-	}
+        $_this->date = date('Y-m-d', strtotime('-'.$days.' days'));
 
-	public function auto_get_fund_data2()
-	{
-
-		AccessCSV::getInstance()->auto_get_fund_data2();
-		
-	}
-
-	public function save_fund_data_from_text()
-	{
-
-		SaveFromCSV::getInstance()->save_fund_data_from_text();
-		
-	}
-
-	public function fix_history_data(int $year)
-	{
-
-		FixHistoryData::getInstance()->count_tech($year);
-		
-	}
-
-	public static function getInstance($days = 0)
-	{
-        $_this = new self;
-
-        $_this->date = date("Y-m-d", strtotime("-". $days ." days"));
-
-		return $_this;
-
-	}
-
+        return $_this;
+    }
 }

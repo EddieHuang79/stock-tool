@@ -1,12 +1,11 @@
 <?php
 
 return [
-
     'enable' => '啟用',
     'disable' => '停用',
     'select_item' => '選取',
-    'find_nothing' => '查無資料',  
-    'yes' => '是',  
+    'find_nothing' => '查無資料',
+    'yes' => '是',
     'no' => '否',
     'sure' => '確定',
     'sureDisable' => '是否確定停用？',
@@ -35,5 +34,4 @@ return [
     'not_assgign_auth' => '未指定權限！',
     'auth_error' => '權限不足！',
     'variable_error' => '參數不完整！',
-    
 ];

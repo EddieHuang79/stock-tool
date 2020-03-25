@@ -1,22 +1,18 @@
 <?php
 
-use Illuminate\Support\Facades\Schema;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 
 class BBands extends Migration
 {
-
     protected $table = 'technical_analysis';
 
     /**
      * Run the migrations.
-     *
-     * @return void
      */
     public function up()
     {
-
         /*
             壓力線
             支撐線
@@ -31,17 +27,13 @@ class BBands extends Migration
             $table->float('percentB')->after('lowerBand')->default(0.0);
             $table->float('bandwidth')->after('percentB')->default(0.0);
         });
-
     }
 
     /**
      * Reverse the migrations.
-     *
-     * @return void
      */
     public function down()
     {
-
         Schema::table($this->table, function (Blueprint $table) {
             $table->dropColumn('MA20');
             $table->dropColumn('upperBand');
@@ -49,6 +41,5 @@ class BBands extends Migration
             $table->dropColumn('percentB');
             $table->dropColumn('bandwidth');
         });
-
     }
 }

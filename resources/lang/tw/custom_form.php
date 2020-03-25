@@ -1,7 +1,6 @@
 <?php
 
 return [
-
     'variable_error' => '參數不完整！',
     'finish_custom_form_error1' => '系統錯誤，無法結案！',
     'finish_custom_form_error2' => '狀態不正確，無法結案！',
@@ -22,5 +21,4 @@ return [
     'status_error4' => '案件狀態錯誤，無法上傳附件！',
     'some_message_have_not_reply' => '部分訊息尚未回覆，無法結案！',
     'file_too_large' => '檔案超過3.5MB，無法上傳！',
-
 ];

@@ -23,24 +23,19 @@ class ForgotPasswordController extends Controller
 
     /**
      * Create a new controller instance.
-     *
-     * @return void
      */
     public function __construct()
     {
         $this->middleware('guest');
     }
 
-    protected function sendResetLinkResponse(Request $request, $response)
-    {
-        return response( 'done' , 200 )->header('Content-Type', 'text/plain');
-    }
-
     public function showLinkRequestForm()
     {
-
         abort(404);
-
     }
 
+    protected function sendResetLinkResponse(Request $request, $response)
+    {
+        return response('done', 200)->header('Content-Type', 'text/plain');
+    }
 }

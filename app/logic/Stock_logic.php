@@ -8,194 +8,163 @@ use App\Traits\stockFileLib;
 
 class Stock_logic
 {
+    use SchemaFunc;
+    use stockFileLib;
 
-	use SchemaFunc, stockFileLib;
+    private $stop_trade = [
+        1213,
+        1603,
+        5259,
+        1566,
+    ];
 
-	private $stop_trade = [
-		1213,
-		1603,
-		5259,
-		1566,
-	];
+    private $default_start_trade_date = '2016-01-01';
 
-	private $default_start_trade_date = '2016-01-01';
+    // 	取得股票列表
 
-	// 	取得股票列表
+    public function get_list()
+    {
+        $result = [
+            'error' => false,
+            'data' => [],
+        ];
 
-	public function get_list()
-	{
+        $first_data_time = $this->map_with_key(SellBuyPercent_logic::getInstance()->get_first_data_time(), $key1 = 'stock_id', $key2 = 'data_date');
 
-		$result = [
-			"error"	=>	false,
-			"data"	=>	[]
-		];
+        $last_update_time = $this->map_with_key(SellBuyPercent_logic::getInstance()->get_last_update_time(), $key1 = 'stock_id', $key2 = 'data_date');
 
-		$first_data_time = $this->map_with_key( SellBuyPercent_logic::getInstance()->get_first_data_time(), $key1 = 'stock_id', $key2 = 'data_date' );
+        $result['data'] = collect(Stock::getInstance()->get_list())->map(function ($item) use ($first_data_time, $last_update_time) {
+            $item->first_data = isset($first_data_time[$item->id]) ? $first_data_time[$item->id] : '尚無資料';
+            $item->last_updated = isset($last_update_time[$item->id]) ? $last_update_time[$item->id] : '尚無資料';
 
-		$last_update_time = $this->map_with_key( SellBuyPercent_logic::getInstance()->get_last_update_time(), $key1 = 'stock_id', $key2 = 'data_date' );
+            return $item;
+        })->values()->toArray();
 
-		$result["data"] = collect( Stock::getInstance()->get_list() )->map(function( $item ) use($first_data_time, $last_update_time) {
-			$item->first_data = isset($first_data_time[$item->id]) ? $first_data_time[$item->id] : '尚無資料' ;
-			$item->last_updated = isset($last_update_time[$item->id]) ? $last_update_time[$item->id] : '尚無資料' ;
-			return $item;
-		})->values()->toArray() ;
+        return $result;
+    }
 
-		return $result;
+    // 	取得資料
 
-	}
+    public function get_stock($code)
+    {
+        return Stock::getInstance()->get_stock($code);
+    }
 
-	// 	取得資料
+    // 		取得股票清單
 
-	public function get_stock( $code )
-	{
+    public function get_stock_option()
+    {
+        $result = [
+            'error' => false,
+            'data' => [],
+        ];
 
-		return Stock::getInstance()->get_stock( $code );
+        $data = Stock::getInstance()->get_stock_list();
 
-	}
+        $result['data'] = collect($data)->map(function ($item) {
+            return ['text' => $item->code.' - '.$item->name, 'value' => $item->code];
+        })->values()->toArray();
 
+        return $result;
+    }
 
-	// 		取得股票清單
+    // 		寫入5項數據
 
-	public function get_stock_option()
-	{
+    public function add_stock_data($data)
+    {
+        $result = false;
 
-		$result = [
-			"error" => false,
-			"data" 	=> []
-		];
+        if (!empty($data) && \is_array($data)) {
+            $result = Stock::getInstance()->add_stock_data($data);
+        }
 
-		$data = Stock::getInstance()->get_stock_list();
+        return $result;
+    }
 
-		$result["data"] = collect( $data )->map(function( $item ){
-			return ["text" => $item->code . ' - ' . $item->name, "value" => $item->code];
-		})->values()->toArray();
+    // 		取得股票基本資料
 
-		return $result;
-
-	}
-
-
-	// 		寫入5項數據
-
-	public function add_stock_data( $data )
-	{
-
-		$result = false;
-
-		if ( !empty($data) && is_array($data) )
-		{
-
-			$result = Stock::getInstance()->add_stock_data( $data );
-
-		}
-
-		return $result;
-
-	}
-
-
-	// 		取得股票基本資料
-
-	public function get_all_stock_info()
-	{
-
-		return Stock::getInstance()->get_all_stock_info()->mapWithKeys(function ( $item ) {
+    public function get_all_stock_info()
+    {
+        return Stock::getInstance()->get_all_stock_info()->mapWithKeys(function ($item) {
             return [$item->code => $item];
         });
+    }
 
-	}
+    // 		取得5項數據
 
-
-	// 		取得5項數據
-
-	public function get_stock_data( array $id, string $start, string $end )
-	{
-
-		return Stock::getInstance()->get_stock_data( $id, $start, $end )->map( function( $item ) {
-            $item->volume = intval($item->volume);
-            $item->open = floatval($item->open);
-            $item->close = floatval($item->close);
-            $item->highest = floatval($item->highest);
-            $item->lowest = floatval($item->lowest);
-            return $item;
-        })->groupBy("stock_id");
-
-	}
-
-
-	// 		取得已轉入資料庫內的資料
-	// 		type: 1 - 撈全部，type:2 - 撈當月
-
-	public function get_all_stock_data( $type = 1, $sub_type = 1 )
-	{
-
-		$data = Stock::getInstance()->get_all_stock_data( $type, $sub_type );
-
-		$result = collect( $data )->mapToGroups(function ( $item ) use($type) {
-			$value = $type === 1 ? date("Ym", strtotime($item->data_date)) : date("Ymd", strtotime($item->data_date)) ;
-			return [$item->code => $value];
-		})->toArray();
-
-		return $result;
-
-	}
-
-
-	// 		取得已轉入資料庫內的資料
-
-	public function get_all_stock_data_id()
-	{
-
-		$data = Stock::getInstance()->get_all_stock_data_id();
-
-		$result = collect( $data )->mapToGroups(function ( $item ) {
-			return [$item->code => $item->stock_data_id];
-		})->toArray();
-
-		return $result;
-
-	}
-
-
-	// 		取得5項數據
-
-	public function get_stock_data_by_date_range( $start, $end, $code = '' )
-	{
-
-		$result = false;
-
-		if ( !empty($start) && is_string($start) && !empty($end) && is_string($end) )
-		{
-
-			$data = Stock::getInstance()->get_stock_data_by_date_range( $start, $end, $code );
-
-			$result = $data->mapToGroups(function( $item ) {
-                $item->open = floatval($item->open);
-                $item->highest = floatval($item->highest);
-                $item->lowest = floatval($item->lowest);
-                $item->close = floatval($item->close);
-				return [ $item->code => $item ];
-			})->toArray();
-
-		}
-
-		return $result;
-
-	}
-
-
-	//      從檔案取得所有已更新到本月的股票的最新更新日期 >> 新版
-
-    public function get_all_stock_update_date_new( $type = 1 )
+    public function get_stock_data(array $id, string $start, string $end)
     {
+        return Stock::getInstance()->get_stock_data($id, $start, $end)->map(function ($item) {
+            $item->volume = (int) ($item->volume);
+            $item->open = (float) ($item->open);
+            $item->close = (float) ($item->close);
+            $item->highest = (float) ($item->highest);
+            $item->lowest = (float) ($item->lowest);
 
+            return $item;
+        })->groupBy('stock_id');
+    }
+
+    // 		取得已轉入資料庫內的資料
+    // 		type: 1 - 撈全部，type:2 - 撈當月
+
+    public function get_all_stock_data($type = 1, $sub_type = 1)
+    {
+        $data = Stock::getInstance()->get_all_stock_data($type, $sub_type);
+
+        $result = collect($data)->mapToGroups(function ($item) use ($type) {
+            $value = $type === 1 ? date('Ym', strtotime($item->data_date)) : date('Ymd', strtotime($item->data_date));
+
+            return [$item->code => $value];
+        })->toArray();
+
+        return $result;
+    }
+
+    // 		取得已轉入資料庫內的資料
+
+    public function get_all_stock_data_id()
+    {
+        $data = Stock::getInstance()->get_all_stock_data_id();
+
+        $result = collect($data)->mapToGroups(function ($item) {
+            return [$item->code => $item->stock_data_id];
+        })->toArray();
+
+        return $result;
+    }
+
+    // 		取得5項數據
+
+    public function get_stock_data_by_date_range($start, $end, $code = '')
+    {
+        $result = false;
+
+        if (!empty($start) && \is_string($start) && !empty($end) && \is_string($end)) {
+            $data = Stock::getInstance()->get_stock_data_by_date_range($start, $end, $code);
+
+            $result = $data->mapToGroups(function ($item) {
+                $item->open = (float) ($item->open);
+                $item->highest = (float) ($item->highest);
+                $item->lowest = (float) ($item->lowest);
+                $item->close = (float) ($item->close);
+
+                return [$item->code => $item];
+            })->toArray();
+        }
+
+        return $result;
+    }
+
+    //      從檔案取得所有已更新到本月的股票的最新更新日期 >> 新版
+
+    public function get_all_stock_update_date_new($type = 1)
+    {
         $stop_trade = $this->stop_trade;
 
         // 取得指定股票區間的當月的檔案
 
-        switch ( $type )
-        {
-
+        switch ($type) {
             case 1:
 
                 $sec = 0;
@@ -205,7 +174,6 @@ class Stock_logic
                 $end = 1569;
 
                 break;
-
             case 2:
 
                 $sec = 5;
@@ -215,7 +183,6 @@ class Stock_logic
                 $end = 2221;
 
                 break;
-
             case 3:
 
                 $sec = 10;
@@ -225,8 +192,6 @@ class Stock_logic
                 $end = 2492;
 
                 break;
-
-
             case 4:
 
                 $sec = 15;
@@ -236,8 +201,6 @@ class Stock_logic
                 $end = 3013;
 
                 break;
-
-
             case 5:
 
                 $sec = 20;
@@ -247,7 +210,6 @@ class Stock_logic
                 $end = 3339;
 
                 break;
-
             case 6:
 
                 $sec = 25;
@@ -257,7 +219,6 @@ class Stock_logic
                 $end = 3704;
 
                 break;
-
             case 7:
 
                 $sec = 30;
@@ -267,7 +228,6 @@ class Stock_logic
                 $end = 4747;
 
                 break;
-
             case 8:
 
                 $sec = 35;
@@ -277,7 +237,6 @@ class Stock_logic
                 $end = 5443;
 
                 break;
-
             case 9:
 
                 $sec = 40;
@@ -287,7 +246,6 @@ class Stock_logic
                 $end = 6187;
 
                 break;
-
             case 10:
 
                 $sec = 45;
@@ -297,7 +255,6 @@ class Stock_logic
                 $end = 6535;
 
                 break;
-
             case 11:
 
                 $sec = 50;
@@ -307,7 +264,6 @@ class Stock_logic
                 $end = 8404;
 
                 break;
-
             case 12:
 
                 $sec = 55;
@@ -317,164 +273,130 @@ class Stock_logic
                 $end = 912398;
 
                 break;
-
         }
 
         $result = [
-            "sec"           => $sec,
-            "start"         => $start,
-            "end"           => $end,
-            "stop_trade"    => $stop_trade
+            'sec' => $sec,
+            'start' => $start,
+            'end' => $end,
+            'stop_trade' => $stop_trade,
         ];
 
         return $result;
-
     }
-
-
 
     // 		取得股票類型(上市、上櫃)
 
-	public function get_stock_type()
-	{
+    public function get_stock_type()
+    {
+        $data = Stock::getInstance()->get_stock_list();
 
-		$data = Stock::getInstance()->get_stock_list();
+        $result = collect($data)->mapWithKeys(function ($item) {
+            return [$item->code => $item->type];
+        })->toArray();
 
-		$result = collect( $data )->mapWithKeys(function ( $item ) {
-			return [$item->code => $item->type];
-		})->toArray();
+        return $result;
+    }
 
-		return $result;
+    // 		取得開始交易日期
 
-	}
+    public function get_start_trade_date($stock_id)
+    {
+        $result = $this->default_start_trade_date;
 
+        if (!empty($stock_id) && \is_int($stock_id)) {
+            $date = Stock::getInstance()->get_start_trade_date($stock_id)->data_date;
 
-	// 		取得開始交易日期
+            $result = strtotime($result) >= strtotime($date) ? $result : $date;
+        }
 
-	public function get_start_trade_date( $stock_id )
-	{
+        return $result;
+    }
 
-		$result = $this->default_start_trade_date;
-
-		if ( !empty($stock_id) && is_int($stock_id) )
-		{
-
-			$date = Stock::getInstance()->get_start_trade_date( $stock_id )->data_date;
-
-			$result = strtotime($result) >= strtotime($date) ? $result : $date ;
-
-		}
-
-		return $result;
-
-	}
-
-
-	//      取得不正常的股價
+    //      取得不正常的股價
 
     public function get_stock_by_none_price()
     {
-
         return Stock::getInstance()->get_stock_by_none_price();
-
     }
-
 
     // 		取得等待更新的股票
 
-    public function get_wait_to_update_stock( $start, $end, $except )
+    public function get_wait_to_update_stock($start, $end, $except)
     {
-
-        $result = $this->get_all_stock_info()->filter(function ($item, $key) use($start, $end, $except) {
-            return $start <= $key && $key <= $end && !in_array($key, $except);
-        })->map( function($item, $key) {
+        $result = $this->get_all_stock_info()->filter(function ($item, $key) use ($start, $end, $except) {
+            return $start <= $key && $key <= $end && !\in_array($key, $except, true);
+        })->map(function ($item, $key) {
             return $key;
         })->slice(0, 1)->values()->toArray();
 
         return $result;
-
     }
 
-
-    public function get_stock_id( $code = [] )
+    public function get_stock_id($code = [])
     {
-
-        return Stock::getInstance()->get_stock_id( $code );
-
+        return Stock::getInstance()->get_stock_id($code);
     }
 
-    public function get_assign_code_stock_data( $stock_id = [] )
+    public function get_assign_code_stock_data($stock_id = [])
     {
-
-        return Stock::getInstance()->get_assign_code_stock_data( $stock_id );
-
+        return Stock::getInstance()->get_assign_code_stock_data($stock_id);
     }
 
     // 		取得股票資訊
 
-	public function get_stock_info()
-	{
+    public function get_stock_info()
+    {
+        $data = Stock::getInstance()->get_stock_list();
 
-		$data = Stock::getInstance()->get_stock_list();
+        $result = collect($data)->mapWithKeys(function ($item) {
+            return [(int) $item->code => $item];
+        })->toArray();
 
-		$result = collect( $data )->mapWithKeys(function ( $item ) {
-			return [(int)$item->code => $item];
-		})->toArray();
+        return $result;
+    }
 
-		return $result;
+    public function get_stock_data_assign_year(int $year, array $stock_id)
+    {
+        return Stock::getInstance()->get_stock_data_assign_year($year, $stock_id)->groupBy('stock_id')->map(function ($item) {
+            $item->map(function ($item) {
+                $item->data_date = $item->data_date;
+                $item->volume = (int) ($item->volume);
+                $item->open = (float) ($item->open);
+                $item->close = (float) ($item->close);
+                $item->highest = (float) ($item->highest);
+                $item->lowest = (float) ($item->lowest);
 
-	}
+                return $item;
+            });
 
-	public function get_stock_data_assign_year(int $year, array $stock_id)
-	{
-
-		return Stock::getInstance()->get_stock_data_assign_year($year, $stock_id)->groupBy('stock_id')->map(function($item) {
-			$item->map(function($item) {
-				$item->data_date = $item->data_date;
-				$item->volume = intval($item->volume);
-				$item->open = floatval($item->open);
-				$item->close = floatval($item->close);
-				$item->highest = floatval($item->highest);
-				$item->lowest = floatval($item->lowest);
-				return $item;
-			});
-			return $item;
-		})->toArray();		
-
-	}
+            return $item;
+        })->toArray();
+    }
 
     // 		取得股票資訊
 
-	public function get_stock_info_by_stock_id()
-	{
-
-		return Stock::getInstance()->get_stock_list()->mapWithKeys(function($item) {
+    public function get_stock_info_by_stock_id()
+    {
+        return Stock::getInstance()->get_stock_list()->mapWithKeys(function ($item) {
             return [$item->id => [
-                "code" => $item->code,
-                "name" => $item->name,
+                'code' => $item->code,
+                'name' => $item->name,
             ]];
         })->toArray();
-
-	}
+    }
 
     // 		取得股票資訊
 
-	public function mapping_code_and_id()
-	{
-
-		return Stock::getInstance()->get_stock_list()->mapWithKeys(function($item) {
+    public function mapping_code_and_id()
+    {
+        return Stock::getInstance()->get_stock_list()->mapWithKeys(function ($item) {
             return [$item->id => $item->code];
         })->toArray();
-
-	}
+    }
 
     public static function getInstance()
     {
-
-        return new self;
-
+        return new self();
     }
-
-
-
 }

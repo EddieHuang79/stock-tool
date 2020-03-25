@@ -29,8 +29,6 @@ class ResetPasswordController extends Controller
 
     /**
      * Create a new controller instance.
-     *
-     * @return void
      */
     public function __construct()
     {
@@ -39,9 +37,6 @@ class ResetPasswordController extends Controller
 
     public function showResetForm()
     {
-
         abort(404);
-
     }
-
 }

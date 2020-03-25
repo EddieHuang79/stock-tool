@@ -3,312 +3,257 @@
 namespace App\Traits;
 
 use Illuminate\Support\Facades\Storage;
-use app\logic\Redis_tool;
 
 trait stockFileLib
 {
+    private $parents_dir = 'stock';
 
-	private $parents_dir = 'stock';
+    private $fund_parents_dir = 'fund';
 
-	private $fund_parents_dir = 'fund';
+    private function get_sub_dir()
+    {
+        $getDir = $this->parents_dir;
 
-	private function get_sub_dir()
-	{
+        $data = Storage::directories($getDir);
 
-		$getDir = $this->parents_dir;
+        $result = collect($data)->map(function ($item, $key) {
+            $tmp = explode('/', $item);
 
-		$data = Storage::directories( $getDir );
+            return $tmp[1];
+        })->toArray();
 
-		$result = collect( $data )->map(function($item, $key){
-			$tmp = explode("/", $item);
-			return $tmp[1];
-		})->toArray();
+        return $result;
+    }
 
-		return $result;
+    //  取得目錄下檔案清單
 
-	}
+    private function get_dir_files($dir = '')
+    {
+        $getDir = $this->parents_dir;
 
-	//  取得目錄下檔案清單
+        $getDir .= !empty($dir) ? '/'.$dir : '';
 
-	private function get_dir_files( $dir = '' )
-	{
+        $data = Storage::allFiles($getDir);
 
-		$getDir = $this->parents_dir;
+        $result = collect($data)->filter(function ($item, $key) {
+            return strpos($item, '.csv');
+        })->values()->toArray();
 
-		$getDir.= !empty($dir) ? '/' . $dir : '' ;
+        return $result;
+    }
 
-		$data = Storage::allFiles( $getDir );
+    // 	將檔案資料轉成轉成陣列
 
-		$result = collect( $data )->filter(function($item, $key){
-			return strpos($item, ".csv");
-		})->values()->toArray();
+    private function stock_data_to_array($fileName)
+    {
+        $result = [];
 
-		return $result ;
+        if (!empty($fileName) && file_exists(storage_path('app/'.$fileName))) {
+            $data = Storage::get($fileName);
 
-	}
+            $data = explode("\r\n", $data);
 
-	// 	將檔案資料轉成轉成陣列
+            $result = collect($data)->map(function ($item, $key) {
+                $tmp = explode('","', $item);
+                $tmp = collect($tmp)->map(function ($item2, $key2) {
+                    return str_replace('"', '', str_replace(',', '', $item2));
+                })->toArray();
 
-	private function stock_data_to_array( $fileName )
-	{
+                return [
+                    'date' => isset($tmp[0]) ? $this->change_to_west_year($tmp[0]) : '',
+                    'volume' => isset($tmp[1]) ? (int) ($tmp[1]) : '',
+                    'money' => isset($tmp[2]) ? (int) ($tmp[2]) : '',
+                    'open' => isset($tmp[3]) ? (float) ($tmp[3]) : '',
+                    'highest' => isset($tmp[4]) ? (float) ($tmp[4]) : '',
+                    'lowest' => isset($tmp[5]) ? (float) ($tmp[5]) : '',
+                    'close' => isset($tmp[6]) ? (float) ($tmp[6]) : '',
+                ];
+            })->toArray();
+        }
 
-		$result = [];
+        return $result;
+    }
 
-		if ( !empty($fileName) && file_exists( storage_path( 'app/' . $fileName ) ) )
-		{
+    // 		西元年轉民國年
 
-			$data = Storage::get( $fileName );
+    private function change_to_taiwan_year($date)
+    {
+        return (int) substr($date, 0, 4) - 1911 .'/'.substr($date, 4, 2);
+    }
 
-			$data = explode("\r\n", $data);
+    // 		民國日期轉西元日期
 
-			$result = collect( $data )->map(function( $item, $key ) {
-				$tmp = explode('","', $item);
-				$tmp = collect( $tmp )->map(function( $item2, $key2 ){
-					return str_replace('"', '', str_replace(',', '', $item2));
-				})->toArray();
-				return [
-					"date" 		=> isset($tmp[0]) ? $this->change_to_west_year( $tmp[0] ) : '',
-					"volume" 	=> isset($tmp[1]) ? intval($tmp[1]) : '',
-					"money" 	=> isset($tmp[2]) ? intval($tmp[2]) : '',
-					"open" 		=> isset($tmp[3]) ? floatval($tmp[3]) : '',
-					"highest" 	=> isset($tmp[4]) ? floatval($tmp[4]) : '',
-					"lowest" 	=> isset($tmp[5]) ? floatval($tmp[5]) : '',
-					"close" 	=> isset($tmp[6]) ? floatval($tmp[6]) : ''
-				];
-			})->toArray();
+    private function change_to_west_year($date)
+    {
+        $result = '';
 
-		}
+        if (!empty($date) && \is_string($date)) {
+            $tmp = explode('/', $date);
 
-		return $result;
+            $tmp[0] = 1911 + (int) $tmp[0];
 
-	}
+            $result = implode('-', $tmp);
+        }
 
+        return $result;
+    }
 
-	// 		西元年轉民國年
+    // 		轉存股票檔案
+    // 		新增規則，如果拿到的檔案跟原本內容相同，表示股票有問題，加入排除清單，免得卡著
 
-	private function change_to_taiwan_year( $date )
-	{
+    private function saveStockFile($data, $date, $code, $type)
+    {
+        $result = false;
 
-		return (int)substr($date, 0, 4) - 1911 . '/' . substr($date, 4, 2);
+        if (!empty($data) && \is_string($data) && !empty($date) && !empty($code)) {
+            $sub = floor($code / 1000) * 1000;
 
-	}
+            $sub = $sub > 9999 ? 9000 : $sub;
 
+            $file_path = $this->parents_dir.'/st'.$sub.'/'.$code;
 
-	// 		民國日期轉西元日期
+            Storage::makeDirectory($file_path);
 
-	private function change_to_west_year( $date )
-	{
+            $file_name = $file_path.'/'.$date.'.csv';
 
-		$result = '';
+            $tmp = explode("\r\n", $data);
 
-		if ( !empty($date) && is_string($date) )
-		{
+            $cnt = \count($tmp);
 
-			$tmp = explode("/", $date);
+            $data = $type === 1 ? \array_slice($tmp, 2, $cnt - 8) : \array_slice($tmp, 5, $cnt - 6);
 
-			$tmp[0] = 1911 + (int)$tmp[0];
+            $ori_content = file_exists(storage_path($file_name)) ? Storage::get($file_name) : '';
 
-			$result = implode("-", $tmp);
+            $new_content = implode("\r\n", $data);
 
-		}
+            if ($cnt > 0 && $ori_content !== $new_content) {
+                Storage::put($file_name, implode("\r\n", $data));
 
-		return $result;
+                $result = true;
+            }
+        }
 
-	}
+        return $result;
+    }
 
+    // 		取得已取回的股票資料檔案
 
-	// 		轉存股票檔案
-	// 		新增規則，如果拿到的檔案跟原本內容相同，表示股票有問題，加入排除清單，免得卡著
+    private function get_exist_data($code)
+    {
+        $result = [];
 
-	private function saveStockFile( $data, $date, $code, $type )
-	{
+        if (!empty($code) && \is_int($code)) {
+            $sub = floor($code / 1000) * 1000;
 
-		$result = false;
+            $file_path = $this->parents_dir.'/st'.$sub.'/'.$code;
 
-		if ( !empty($data) && is_string($data) && !empty($date) && !empty($code) )
-		{
+            $files = Storage::allFiles($file_path);
 
-			$sub = floor($code / 1000) * 1000;
+            $result = $this->filename_to_date($files);
+        }
 
-			$sub = $sub > 9999 ? 9000 : $sub ;
+        return $result;
+    }
 
-			$file_path = $this->parents_dir . '/st' . $sub . '/' . $code;
+    // 		檔名轉日期
 
-			Storage::makeDirectory( $file_path );
+    private function filename_to_date($data)
+    {
+        $result = [];
 
-			$file_name = $file_path . '/' . $date . '.csv';
+        if (!empty($data) && \is_array($data)) {
+            $result = collect($data)->filter(function ($item, $key) {
+                return strpos($item, '.csv');
+            })->map(function ($item, $key) {
+                $file_name = basename($item);
+                $tmp = explode('.', $file_name);
 
-			$tmp = explode("\r\n", $data);
+                return $tmp[0];
+            })->values()->toArray();
+        }
 
-			$cnt = count($tmp);
+        return $result;
+    }
 
-			$data = $type === 1 ? array_slice( $tmp, 2, $cnt - 8  ) : array_slice( $tmp, 5, $cnt - 6  ) ;
+    // 		建立空白檔案
 
-			$ori_content =  file_exists( storage_path( $file_name ) ) ? Storage::get( $file_name ) : '' ;
+    private function create_empty_file($code)
+    {
+        $result = [];
 
-			$new_content = implode("\r\n", $data);
+        if (!empty($code) && \is_int($code)) {
+            $sub = floor($code / 1000) * 1000;
 
-			if ( $cnt > 0 && $ori_content !== $new_content )
-			{
+            $sub = $sub < 10000 ? $sub : 9000;
 
-				Storage::put( $file_name , implode("\r\n", $data) );
+            $file_path = $this->parents_dir.'/st'.$sub.'/'.$code;
 
-				$result = true;
+            $file_name = $file_path.'/'.date('Ym01').'.csv';
 
-			}
+            if (file_exists(storage_path('app/'.$file_name)) === false) {
+                Storage::put($file_name, '');
+            }
+        }
 
-		}
+        return $result;
+    }
 
-		return $result;
+    // 		轉存股票三大法人檔案 上市
 
-	}
+    private function saveStockFundFile(int $type, string $data, string $date)
+    {
+        $result = false;
 
+        $year = (int) date('Y', strtotime($date));
 
-	// 		取得已取回的股票資料檔案
+        $file_path = $this->fund_parents_dir.'/'.$year.'/'.$type;
 
-	private function get_exist_data( $code )
-	{
+        Storage::makeDirectory($file_path);
 
-		$result = [];
+        $file_name = $file_path.'/'.$date.'.csv';
 
-		if ( !empty($code) && is_int($code) )
-		{
+        $tmp = explode("\r\n", $data);
 
-			$sub = floor($code / 1000) * 1000;
+        $cnt = \count($tmp);
 
-			$file_path = $this->parents_dir . '/st' . $sub . '/' . $code;
+        $data = \array_slice($tmp, 2, $cnt - 12);
 
-			$files = Storage::allFiles( $file_path );
+        $new_content = implode("\r\n", $data);
 
-			$result = $this->filename_to_date( $files );
+        Storage::put($file_name, $new_content);
 
-		}
+        $result = true;
 
-		return $result;
+        return $result;
+    }
 
-	}
+    // 		轉存股票三大法人檔案 上櫃
 
+    private function saveStockFundFile2(int $type, array $data, string $date)
+    {
+        $result = false;
 
-	// 		檔名轉日期
+        $year = (int) date('Y', strtotime($date));
 
-	private function filename_to_date( $data )
-	{
+        $file_path = $this->fund_parents_dir.'/'.$year.'/'.$type.'/';
 
-		$result = [];
+        Storage::makeDirectory($file_path);
 
-		if ( !empty($data) && is_array($data) )
-		{
+        $file_name = $file_path.'/'.$date.'.csv';
 
-			$result = collect( $data )->filter(function($item, $key){
-				return strpos($item, ".csv");
-			})->map(function($item, $key){
-				$file_name = basename($item);
-				$tmp = explode(".", $file_name);
-				return $tmp[0];
-			})->values()->toArray();
+        $new_content = collect($data)->map(function ($item) {
+            for ($i = 2; $i <= 15; ++$i) {
+                $item[$i] = str_replace(',', '', $item[$i]);
+                $item[$i] = (int) ($item[$i]);
+            }
 
-		}
+            return implode(',', $item);
+        })->implode("\r\n");
 
-		return $result;
+        Storage::put($file_name, $new_content);
 
-	}
+        $result = true;
 
-
-	// 		建立空白檔案
-
-	private function create_empty_file( $code )
-	{
-
-		$result = [];
-
-		if ( !empty($code) && is_int($code) )
-		{
-
-			$sub = floor($code / 1000) * 1000;
-
-			$sub = $sub < 10000 ? $sub : 9000;
-
-			$file_path = $this->parents_dir . '/st' . $sub . '/' . $code;
-
-			$file_name = $file_path . '/' . date("Ym01") . '.csv';
-
-			if ( file_exists( storage_path( 'app/' . $file_name ) ) === false )
-			{
-
-				Storage::put( $file_name , '');
-
-			}
-
-		}
-
-		return $result;
-
-	}
-
-
-	// 		轉存股票三大法人檔案 上市
-
-	private function saveStockFundFile( int $type, string $data, string $date )
-	{
-
-		$result = false;
-
-		$year = (int)date("Y", strtotime($date));
-
-		$file_path = $this->fund_parents_dir . '/' . $year . '/' . $type;
-
-		Storage::makeDirectory( $file_path );
-
-		$file_name = $file_path . '/' . $date . '.csv';
-
-		$tmp = explode("\r\n", $data);
-
-		$cnt = count($tmp);
-
-		$data = array_slice( $tmp, 2, $cnt - 12 ) ;
-
-		$new_content = implode("\r\n", $data);
-
-		Storage::put( $file_name , $new_content );
-
-		$result = true;
-
-		return $result;
-
-	}
-
-
-	// 		轉存股票三大法人檔案 上櫃
-
-	private function saveStockFundFile2( int $type, array $data, string $date )
-	{
-
-		$result = false;
-
-		$year = (int)date("Y", strtotime($date));
-
-		$file_path = $this->fund_parents_dir . '/' . $year . '/' . $type . '/';
-
-		Storage::makeDirectory( $file_path );
-
-		$file_name = $file_path . '/' . $date . '.csv';
-
-		$new_content = collect($data)->map(function($item) {
-			for ($i=2; $i <= 15; $i++) { 
-				$item[$i] = str_replace(",", "", $item[$i]);
-				$item[$i] = intval($item[$i]);
-			}
-			return implode(",", $item);
-		})->implode("\r\n");
-
-		Storage::put( $file_name , $new_content );
-
-		$result = true;
-
-		return $result;
-
-	}
-
+        return $result;
+    }
 }
-
-

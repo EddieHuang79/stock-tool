@@ -17,68 +17,48 @@ use App\abstracts\BollingerBandsStrategy;
 
 class BollingerBandsStrategySimulation10 extends BollingerBandsStrategy
 {
+    public function do()
+    {
+        $this->volume_limit = 1000;
+
+        $this->set_file_name('Strategy/BollingerBandsStrategySimulation10.txt');
+
+        $this->set_log_title('BollingerBandsStrategySimulation10');
+
+        $this->count();
+
+        return true;
+    }
+
+    public static function getInstance()
+    {
+        return new self();
+    }
 
     // 交易策略
 
     protected function setTradeDate()
     {
-
         $has_stock = false;
 
-        foreach ($this->Tech_data as $row )
-        {
+        foreach ($this->Tech_data as $row) {
+            $sellBuyPercent = isset($this->sellBuyPercent[$row['data_date']]) ? $this->sellBuyPercent[$row['data_date']] : 0;
 
-            $sellBuyPercent = isset($this->sellBuyPercent[$row["data_date"]]) ? $this->sellBuyPercent[$row["data_date"]] : 0 ;
+            if ($row['percentB'] >= 0.8 && !empty($sellBuyPercent) && $sellBuyPercent <= 0.8 && $has_stock === false) {
+                $this->set_volume($row['data_date']);
 
-            if ( $row["percentB"] >= 0.8 && !empty($sellBuyPercent) && $sellBuyPercent <= 0.8 && $has_stock === false )
-            {
-
-                $this->set_volume( $row["data_date"] );
-
-                if ( $this->volume_data > $this->volume_limit )
-                {
-
+                if ($this->volume_data > $this->volume_limit) {
                     $has_stock = true;
 
                     $this->buy_date[] = $row;
-
                 }
-
             }
 
-            if ( $has_stock === true && $row["percentB"] < 0.8 && $sellBuyPercent > 0.7 )
-            {
-
+            if ($has_stock === true && $row['percentB'] < 0.8 && $sellBuyPercent > 0.7) {
                 $has_stock = false;
 
                 $this->sell_date[] = $row;
-
             }
-
         }
-
     }
-
-    public function do()
-    {
-
-        $this->volume_limit = 1000;
-
-        $this->set_file_name( "Strategy/BollingerBandsStrategySimulation10.txt" );
-
-        $this->set_log_title( "BollingerBandsStrategySimulation10" );
-
-        $this->count();
-
-        return true;
-
-    }
-
-    public static function getInstance()
-    {
-
-        return new self;
-
-    }
-
 }

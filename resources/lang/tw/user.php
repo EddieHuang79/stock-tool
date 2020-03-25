@@ -1,7 +1,6 @@
 <?php
 
 return [
-
     'action_name' => '使用者帳號設定',
     'account' => '帳號',
     'password' => '密碼',
@@ -45,5 +44,4 @@ return [
     'password_update_success' => '密碼更新成功！',
     'variable_error' => '參數不完整！',
     'auth_setting_error' => '權限設定錯誤，客服權限跟管理者權限不可同時勾選！',
-
 ];

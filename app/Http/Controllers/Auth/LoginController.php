@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\logic\Admin_user_logic;
 use Illuminate\Foundation\Auth\AuthenticatesUsers;
 use Illuminate\Http\Request;
-use App\logic\Admin_user_logic;
 
 class LoginController extends Controller
 {
@@ -31,46 +31,31 @@ class LoginController extends Controller
 
     /**
      * Create a new controller instance.
-     *
-     * @return void
      */
     public function __construct()
     {
         // $this->middleware('guest')->except('logout');
     }
 
-
     public function username()
     {
-
         return 'account';
-
     }
-
 
     public function showLoginForm()
     {
-
         abort(404);
-
     }
 
     public function login(Request $request)
     {
-
-        return response()->json( Admin_user_logic::login_verify( $request )  );
-
+        return response()->json(Admin_user_logic::login_verify($request));
     }
 
     public function logout(Request $request)
     {
-
         // Auth::logout();
 
-        return response( "done" , 200 )->header('Content-Type', 'text/plain');
-
+        return response('done', 200)->header('Content-Type', 'text/plain');
     }
-
 }
-
-

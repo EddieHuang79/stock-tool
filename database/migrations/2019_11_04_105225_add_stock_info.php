@@ -1,25 +1,21 @@
 <?php
 
-use Illuminate\Support\Facades\Schema;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Database\Migrations\Migration;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use App\model\Stock;
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
 
 class AddStockInfo extends Migration
 {
-
     protected $table = 'stock_info';
 
     /**
      * Run the migrations.
-     *
-     * @return void
      */
     public function up()
     {
-
         Schema::table($this->table, function (Blueprint $table) {
             $table->boolean('hasFutures')->after('name')->default(false);
             $table->boolean('hasOptions')->after('hasFutures')->default(false);
@@ -31,7 +27,7 @@ class AddStockInfo extends Migration
             $table->string('manager')->after('ceo')->default('');
         });
 
-        $stockInfo = Stock::getInstance()->get_stock_list()->mapWithKeys(function($item) {
+        $stockInfo = Stock::getInstance()->get_stock_list()->mapWithKeys(function ($item) {
             return [$item->code => $item->id];
         })->toArray();
 
@@ -41,40 +37,38 @@ class AddStockInfo extends Migration
 
         unset($data[0]);
 
-        $data = collect($data)->filter(function($item) use($stockInfo) {
-            $content = explode(",", $item);
-            $code = (int)$content[0];
+        $data = collect($data)->filter(function ($item) use ($stockInfo) {
+            $content = explode(',', $item);
+            $code = (int) $content[0];
+
             return isset($stockInfo[$code]);
-        })->mapWithKeys(function($item) use($stockInfo) {
-            $content = explode(",", $item);
-            $code = (int)$content[0];
+        })->mapWithKeys(function ($item) use ($stockInfo) {
+            $content = explode(',', $item);
+            $code = (int) $content[0];
             $stockId = $stockInfo[$code];
+
             return [
                 $stockId => [
-                    "hasFutures"        => $content[2] === '有',
-                    "hasOptions"        => $content[3] === '有',
-                    "capital"           => $content[4],
-                    "circulation"       => $content[5],
-                    "marketValue"       => $content[6],
-                    "category"          => $content[9],
-                    "ceo"               => $content[10],
-                    "manager"           => $content[11],
-                ]
+                    'hasFutures' => $content[2] === '有',
+                    'hasOptions' => $content[3] === '有',
+                    'capital' => $content[4],
+                    'circulation' => $content[5],
+                    'marketValue' => $content[6],
+                    'category' => $content[9],
+                    'ceo' => $content[10],
+                    'manager' => $content[11],
+                ],
             ];
-        })->map(function($data, $stockId) {
+        })->map(function ($data, $stockId) {
             DB::table('stock_info')->where('id', $stockId)->update($data);
         });
-
     }
 
     /**
      * Reverse the migrations.
-     *
-     * @return void
      */
     public function down()
     {
-
         Schema::table($this->table, function (Blueprint $table) {
             $table->dropColumn('hasFutures');
             $table->dropColumn('hasOptions');
@@ -85,6 +79,5 @@ class AddStockInfo extends Migration
             $table->dropColumn('ceo');
             $table->dropColumn('manager');
         });
-
     }
 }

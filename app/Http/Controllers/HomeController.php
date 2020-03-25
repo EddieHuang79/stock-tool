@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 class HomeController extends Controller
 {
-
     /**
      * Show the application dashboard.
      *
@@ -12,8 +11,6 @@ class HomeController extends Controller
      */
     public function index()
     {
-
-        require("dist/index.html");
-
+        require 'dist/index.html';
     }
 }
