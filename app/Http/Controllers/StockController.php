@@ -8,6 +8,7 @@ use App\jobs\FixHistoryData;
 use App\logic\Stock_logic;
 use App\simulation\BollingerBandsBearsStrategySimulation1;
 use App\simulation\FindStrategySimulation;
+use App\simulation\TopHV;
 use App\Traits\SchemaFunc;
 use App\Traits\stockFileLib;
 use Illuminate\Http\Request;
@@ -133,11 +134,12 @@ class StockController extends Controller
 
         // FindStrategySimulation::getInstance()->do([2016, 2017, 2018]);
 
-        BollingerBandsBearsStrategySimulation1::getInstance()->do($page = 1, $limit = 10, $year = 2016);
+        // BollingerBandsBearsStrategySimulation1::getInstance()->do($page = 1, $limit = 100, $year = 2016);
 
         // CrontabCenter::getInstance()->save_fund_data_from_text();
 
         // FixHistoryData::getInstance()->count_tech(2017);
+        TopHV::getInstance()->do();
 
         return response('done', 200)->header('Content-Type', 'text/plain');
     }

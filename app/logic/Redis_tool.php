@@ -17,6 +17,8 @@ class Redis_tool
     private $divide_sellBuy_key = 'divideSellBuyDate';
     private $fund_excute_key = 'fundExcute';
     private $fund_excute_key2 = 'fundExcute2';
+    private $bear_page_key = 'bearPage';
+    private $bear_year_key = 'bearYear';
 
     // 設定當日股票更新清單
 
@@ -213,6 +215,24 @@ class Redis_tool
         $date = Redis::get($this->fund_excute_key2);
 
         return !empty($date) ? $date : mktime(0, 0, 0, 1, 1, 2016);
+    }
+
+    // 設定熊市策略參數
+
+    public function setBearData(int $page, int $year): void
+    {
+        Redis::set($this->bear_page_key, $page);
+        Redis::set($this->bear_year_key, $year);
+    }
+
+    // 取得熊市策略參數
+
+    public function getBearData()
+    {
+        return [
+            'page' => Redis::get($this->bear_page_key),
+            'year' => Redis::get($this->bear_year_key),
+        ];
     }
 
     public static function getInstance()

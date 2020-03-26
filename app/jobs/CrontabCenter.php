@@ -3,7 +3,9 @@
 namespace App\jobs;
 
 use App\logic\DataDivide_logic;
+use App\logic\Redis_tool;
 use App\query\updateNoDataStock;
+use App\simulation\BollingerBandsBearsStrategySimulation1;
 use App\simulation\RSIStrategySimulation;
 
 class CrontabCenter
@@ -243,6 +245,20 @@ class CrontabCenter
     public function fix_history_data(int $year)
     {
         FixHistoryData::getInstance()->count_tech($year);
+    }
+
+    public function bearStrategy()
+    {
+        $data = Redis_tool::getInstance()->getBearData();
+        $page = $data['page'] ?? 0;
+        $year = $data['year'] ?? 2016;
+        ++$page;
+        BollingerBandsBearsStrategySimulation1::getInstance()->do($page, $limit = 100, $year);
+        if ($page >= 16) {
+            $page = 0;
+            ++$year;
+        }
+        Redis_tool::getInstance()->setBearData($page, $year);
     }
 
     public static function getInstance($days = 0)

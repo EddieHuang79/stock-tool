@@ -44,9 +44,9 @@ class BollingerBandsBearsStrategySimulation1 extends BollingerBandsStrategy
 
     protected function setTradeDate()
     {
-        $has_stock = false;
-
         foreach ($this->Tech_data as $stock_id => $item) {
+            $has_stock = false;
+
             foreach ($item as $date => $row) {
                 $sellBuyPercent = isset($this->sellBuyPercent[$stock_id][$date]) ? $this->sellBuyPercent[$stock_id][$date] : 0;
 

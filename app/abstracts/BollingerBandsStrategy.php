@@ -107,11 +107,11 @@ class BollingerBandsStrategy
 
         $this->process();
 
-        //  檢查
-
-        if ($this->checkError() === true) {
-            return false;
-        }
+//        //  檢查
+//
+//        if ($this->checkError() === true) {
+//            return false;
+//        }
 
         //  記錄結果
 
@@ -253,15 +253,20 @@ class BollingerBandsStrategy
 
     private function format()
     {
-        $this->result = collect($this->sell_date)->flatten(1)->filter(function ($item) {
+        $this->result = collect($this->sell_date)->map(function ($item) {
+            return collect($item)->map(function ($item, $key) {
+                $item['sellDateIndex'] = $key;
+
+                return $item;
+            });
+        })->flatten(1)->filter(function ($item) {
             $stock_id = $item['stock_id'];
             $sell_date = $item['data_date'];
 
             return isset($this->Stock_data[$stock_id][$sell_date]) && !empty($this->Stock_data[$stock_id][$sell_date]);
-        })->map(function ($item, $key) {
+        })->map(function ($item) {
             $stock_id = $item['stock_id'];
-
-            $buy_date = $this->buy_date[$item['stock_id']][$key]['data_date'];
+            $buy_date = $this->buy_date[$item['stock_id']][$item['sellDateIndex']]['data_date'];
             $sell_date = $item['data_date'];
 
             $buy_fee = ceil($this->Stock_data[$stock_id][$buy_date] * 1000 * 0.001425);
@@ -270,9 +275,9 @@ class BollingerBandsStrategy
             $diff = round($this->Stock_data[$stock_id][$sell_date] - $this->Stock_data[$stock_id][$buy_date], 2);
 
             return implode(',', [
-                'code' => $this->code,
+                'code' => $item['code'],
                 'buy_date' => $buy_date,
-                'buy_percentB' => $this->buy_date[$stock_id][$key]['percentB'],
+                'buy_percentB' => $this->buy_date[$stock_id][$item['sellDateIndex']]['percentB'],
                 'buy_price' => $this->Stock_data[$stock_id][$buy_date],
                 'buy_fee' => $buy_fee,
                 'sell_date' => $sell_date,
@@ -291,55 +296,17 @@ class BollingerBandsStrategy
 
     private function process()
     {
-        $this->insert_content = $this->Stock->get_all_stock_info()->filter(function ($item) {
-            return $item->code > $this->last_code && !\in_array($item->code, $this->not_read, true);
-        })->forPage($this->page, $this->limit)->map(function ($item) {
-            try {
-                $this->code = $item->code;
+        $this->setStockData();
 
-                $error = $this->setStockData();
+        $this->setPercentBData();
 
-                if (!empty($error)) {
-                    throw new \Exception($error);
-                }
+        $this->setSellBuyPercentData();
 
-                $this->setPercentBData();
+        $this->setTradeDate();
 
-                $this->setSellBuyPercentData();
+        $this->format();
 
-                $this->setTradeDate();
-
-                $error = $this->error_filter();
-
-                if (!empty($error)) {
-                    throw new \Exception($error);
-                }
-
-                $this->format();
-            } catch (\Exception $e) {
-                dd($e);
-
-                return collect([implode(',', [
-                    'code' => $item->code,
-                    'buy_date' => '-',
-                    'buy_percentB' => '-',
-                    'buy_price' => 0,
-                    'buy_fee' => 0,
-                    'sell_date' => '-',
-                    'sell_percentB' => '-',
-                    'sell_price' => 0,
-                    'sell_fee' => 0,
-                    'tax' => 0,
-                    'diff' => 0,
-                    'profit' => 0,
-                    'sellBuyPercentAtBuy' => 0,
-                    'sellBuyPercentAtSell' => 0,
-                    'error' => $e->getMessage(),
-                ])]);
-            }
-
-            return $this->result;
-        });
+        $this->insert_content = $this->result;
     }
 
     private function checkError()
