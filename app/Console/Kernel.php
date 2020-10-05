@@ -30,9 +30,9 @@ class Kernel extends ConsoleKernel
 
         // 策略模擬
 
-        $schedule->call(function () {
-            CrontabCenter::getInstance()->bearStrategy();
-        })->cron('*/3 * * * *');
+//        $schedule->call(function () {
+//            CrontabCenter::getInstance()->bearStrategy();
+//        })->cron('*/3 * * * *');
 
 //        $schedule->call(function () {
 //            CrontabCenter::getInstance()->fix_history_data(2018);

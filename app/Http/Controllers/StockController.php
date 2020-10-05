@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\jobs\AccessCSV;
+use App\jobs\AccessHoliday;
 use App\jobs\CrontabCenter;
 use App\jobs\FixHistoryData;
 use App\logic\Stock_logic;
@@ -139,7 +140,12 @@ class StockController extends Controller
         // CrontabCenter::getInstance()->save_fund_data_from_text();
 
         // FixHistoryData::getInstance()->count_tech(2017);
-        TopHV::getInstance()->do();
+        // CrontabCenter::getInstance()->count_sellBuyPercent();
+//        AccessHoliday::getInstance()->get_holiday();
+
+        // CrontabCenter::getInstance()->auto_save_this_month_file_to_db();
+        // CrontabCenter::getInstance()->update_daily_data();
+
 
         return response('done', 200)->header('Content-Type', 'text/plain');
     }

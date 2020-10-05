@@ -63,7 +63,7 @@ class AccessHoliday
 
             $url = $this->get_holiday_url($taiwan_year);
 
-            $source = Curl::to($url)->get();
+            $source = file_get_contents($url);
 
             $source = mb_convert_encoding($source, 'utf-8', 'big5');
 

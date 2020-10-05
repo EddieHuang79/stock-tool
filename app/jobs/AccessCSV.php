@@ -158,13 +158,14 @@ class AccessCSV
     public function update_daily_data($type = 1)
     {
         $timeStamp = time();
-        // $timeStamp = mktime(0,0,0,12,31,2019);
+        // $timeStamp = mktime(0,0,0,8,31,2020);
 
         //  刪除清單
 
         $Redis = Redis_tool::getInstance();
 
-        $Redis->delUpdateDaily();
+        // 補執行要註解掉
+        // $Redis->delUpdateDaily();
 
         //  取得股票設定
 

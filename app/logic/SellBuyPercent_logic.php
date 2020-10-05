@@ -35,7 +35,7 @@ class SellBuyPercent_logic
 
     // 		計算買賣壓力
 
-    public function count_data_logic(object $stockInfo, $statistics, $sellBuyPercentDate)
+    public function count_data_logic($stockInfo, $statistics, $sellBuyPercentDate)
     {
         $this->stock_info = $stockInfo;
 
